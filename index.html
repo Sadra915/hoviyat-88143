@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>هویت</title>
+<meta name="description" content="هویت — پیام‌رسان مدرن و مینیمال ایرانی با کارت هویت دیجیتال به‌جای شماره تلفن.">
+<meta name="theme-color" content="#F0651E">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ===================== صفحه بارگذاری اولیه ===================== -->
+<div id="bootScreen" class="boot-screen">
+  <div class="boot-logo">هویت</div>
+  <div class="boot-dot"></div>
+</div>
+
+<!-- ===================== ورود / ثبت‌نام ===================== -->
+<section id="view-auth" class="view auth-view" hidden>
+  <div class="auth-card">
+    <h1 class="auth-logo">هویت</h1>
+    <p class="auth-tagline">هویت دیجیتال تو، بدون شماره تلفن</p>
+
+    <div class="auth-tabs">
+      <button id="tabLogin" class="auth-tab active">ورود</button>
+      <button id="tabSignup" class="auth-tab">ثبت‌نام</button>
+    </div>
+
+    <form id="loginForm" class="auth-form">
+      <input type="email" id="loginEmail" placeholder="ایمیل" required autocomplete="email">
+      <input type="password" id="loginPassword" placeholder="رمز عبور" required autocomplete="current-password">
+      <p class="auth-error" id="loginError"></p>
+      <button type="submit" class="btn-primary full">ورود</button>
+    </form>
+
+    <form id="signupForm" class="auth-form" hidden>
+      <input type="text" id="signupName" placeholder="نام نمایشی" required>
+      <input type="text" id="signupUsername" placeholder="شناسه کاربری (فقط انگلیسی، مثل: sadra_m)" required>
+      <input type="email" id="signupEmail" placeholder="ایمیل" required autocomplete="email">
+      <input type="password" id="signupPassword" placeholder="رمز عبور (حداقل ۶ کاراکتر)" required autocomplete="new-password">
+      <p class="auth-error" id="signupError"></p>
+      <button type="submit" class="btn-primary full">ساخت حساب</button>
+    </form>
+  </div>
+</section>
+
+<!-- ===================== پوسته اصلی اپ (بعد از ورود) ===================== -->
+<div id="appShell" class="app-shell" hidden>
+
+  <header class="topbar">
+    <div class="brand">هویت</div>
+    <button id="newChatBtn" class="icon-btn" title="گفتگوی جدید">🔍</button>
+    <button id="profileBtn" class="topbar-avatar" title="پروفایل"><span id="myAvatarInitial">؟</span></button>
+  </header>
+
+  <main class="views-area">
+
+    <!-- ---------- صفحه اصلی: لیست چت‌ها ---------- -->
+    <section id="view-home" class="view">
+      <div id="smartSpaceHolder"></div>
+      <div id="chatListHolder" class="chat-list"></div>
+      <button id="fabNewChat" class="fab">+</button>
+    </section>
+
+    <!-- ---------- صفحه گفتگو ---------- -->
+    <section id="view-chat" class="view" hidden>
+      <div id="chatHeader" class="chat-header"></div>
+      <div id="messagesHolder" class="messages-area"></div>
+      <div id="voiceRecordBar" class="voice-record-bar" hidden>
+        <button id="voiceCancelBtn" class="icon-btn">✕</button>
+        <div class="voice-record-wave"><span class="rec-dot"></span> در حال ضبط…</div>
+        <button id="voiceSendBtn" class="btn-primary small">ارسال</button>
+      </div>
+      <form id="composerForm" class="composer">
+        <button type="button" id="attachBtn" class="icon-btn" title="ارسال عکس">📎</button>
+        <input type="file" id="imageInput" accept="image/*" hidden>
+        <input type="text" id="messageInput" placeholder="پیام…" autocomplete="off">
+        <button type="button" id="micBtn" class="icon-btn" title="پیام صوتی">🎙</button>
+        <button type="submit" id="sendBtn" class="icon-btn send-btn" title="ارسال">➤</button>
+      </form>
+    </section>
+
+    <!-- ---------- کارت هویت ---------- -->
+    <section id="view-identity" class="view" hidden>
+      <div class="view-title-bar"><h2>کارت هویت</h2></div>
+      <div id="identityHolder"></div>
+    </section>
+
+    <!-- ---------- تنظیمات ---------- -->
+    <section id="view-settings" class="view" hidden>
+      <div class="view-title-bar"><h2>تنظیمات</h2></div>
+      <div class="settings-list">
+        <div class="settings-item">
+          <label>نام نمایشی</label>
+          <input id="settingsDisplayName" type="text">
+        </div>
+        <div class="settings-item">
+          <label>بیو</label>
+          <input id="settingsBio" type="text" placeholder="چند کلمه درباره خودت">
+        </div>
+        <div class="settings-item">
+          <label>شهر (برای آب‌وهوای Smart Space)</label>
+          <input id="settingsCity" type="text" placeholder="مثلاً بیرجند">
+        </div>
+        <button id="saveSettingsBtn" class="btn-primary full">ذخیره تغییرات</button>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-item toggle-item">
+          <label>حالت شب</label>
+          <button id="darkModeToggle" class="toggle-switch" aria-pressed="false"><span class="knob"></span></button>
+        </div>
+
+        <div class="settings-divider"></div>
+        <button id="logoutBtn" class="btn-outline full danger">خروج از حساب</button>
+      </div>
+    </section>
+
+    <!-- ---------- ادمین (فقط برای UID ادمین نمایش داده می‌شود) ---------- -->
+    <section id="view-admin" class="view" hidden>
+      <div class="view-title-bar"><h2>پنل ادمین</h2></div>
+      <div id="adminHolder"></div>
+    </section>
+
+  </main>
+
+  <!-- ناوبری پایین -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-view="home"><span class="nav-icon">💬</span><span>چت‌ها</span></button>
+    <button class="nav-btn" data-view="chatsearch"><span class="nav-icon">🔎</span><span>مخاطبین</span></button>
+    <button class="nav-btn" data-view="identity"><span class="nav-icon">🪪</span><span>هویت کارت</span></button>
+    <button class="nav-btn" data-view="settings"><span class="nav-icon">⚙️</span><span>تنظیمات</span></button>
+    <button class="nav-btn admin-only" data-view="admin" hidden><span class="nav-icon">🛡️</span><span>ادمین</span></button>
+  </nav>
+</div>
+
+<!-- ===================== مودال گفتگوی جدید ===================== -->
+<div id="newChatModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>گفتگوی جدید</h3><button id="closeNewChat" class="icon-btn">✕</button></div>
+    <input id="newChatUsernameInput" type="text" placeholder="شناسه کاربری (@username)">
+    <p id="newChatError" class="auth-error"></p>
+    <div id="newChatResult" class="new-chat-result"></div>
+  </div>
+</div>
+
+<!-- کتابخانه سبک تولید QR کد (رایگان، بدون کلید) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
