@@ -54,9 +54,14 @@
 <div id="appShell" class="app-shell" hidden>
 
   <header class="topbar">
-    <div class="brand">هویت</div>
-    <button id="newChatBtn" class="icon-btn" title="گفتگوی جدید">🔍</button>
-    <button id="profileBtn" class="topbar-avatar" title="پروفایل"><span id="myAvatarInitial">؟</span></button>
+    <div class="topbar-row">
+      <div class="brand">هویت</div>
+      <button id="profileBtn" class="topbar-avatar" title="پروفایل"><span id="myAvatarInitial">؟</span></button>
+    </div>
+    <div class="topbar-search">
+      <span class="search-icon">🔍</span>
+      <input id="chatSearchInput" type="text" placeholder="جستجو در پیام‌ها و کاربران">
+    </div>
   </header>
 
   <main class="views-area">
@@ -64,6 +69,12 @@
     <!-- ---------- صفحه اصلی: لیست چت‌ها ---------- -->
     <section id="view-home" class="view">
       <div id="smartSpaceHolder"></div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">همه</button>
+        <button class="filter-tab" data-filter="unread">خوانده نشده</button>
+        <button class="filter-tab" data-filter="groups">گروه‌ها</button>
+        <button class="filter-tab" data-filter="channels">کانال‌ها</button>
+      </div>
       <div id="chatListHolder" class="chat-list"></div>
       <button id="fabNewChat" class="fab">+</button>
     </section>
@@ -84,6 +95,22 @@
         <button type="button" id="micBtn" class="icon-btn" title="پیام صوتی">🎙</button>
         <button type="submit" id="sendBtn" class="icon-btn send-btn" title="ارسال">➤</button>
       </form>
+      <div id="channelViewOnlyBar" class="channel-view-only-bar" hidden>فقط ادمین‌های کانال می‌تونن پست بذارن</div>
+    </section>
+
+    <!-- ---------- پروفایل مخاطب (با زدن روی هدر چت باز می‌شود) ---------- -->
+    <section id="view-contact" class="view" hidden>
+      <div id="contactProfileHolder"></div>
+    </section>
+
+    <!-- ---------- اطلاعات گروه ---------- -->
+    <section id="view-groupinfo" class="view" hidden>
+      <div id="groupInfoHolder"></div>
+    </section>
+
+    <!-- ---------- اطلاعات کانال ---------- -->
+    <section id="view-channelinfo" class="view" hidden>
+      <div id="channelInfoHolder"></div>
     </section>
 
     <!-- ---------- کارت هویت ---------- -->
@@ -103,6 +130,10 @@
         <div class="settings-item">
           <label>بیو</label>
           <input id="settingsBio" type="text" placeholder="چند کلمه درباره خودت">
+        </div>
+        <div class="settings-item">
+          <label>شماره تلفن (اختیاری — فقط اگر بخوای نشون داده بشه)</label>
+          <input id="settingsPhone" type="tel" placeholder="مثلاً 0912xxxxxxx" dir="ltr">
         </div>
         <div class="settings-item">
           <label>شهر (برای آب‌وهوای Smart Space)</label>
@@ -140,13 +171,54 @@
   </nav>
 </div>
 
-<!-- ===================== مودال گفتگوی جدید ===================== -->
-<div id="newChatModal" class="modal">
+<!-- ===================== مودال گزینه‌های گفتگوی جدید ===================== -->
+<div id="newChatOptionsModal" class="modal" hidden>
   <div class="modal-box">
-    <div class="modal-head"><h3>گفتگوی جدید</h3><button id="closeNewChat" class="icon-btn">✕</button></div>
+    <div class="modal-head"><h3>گفتگوی جدید</h3><button id="closeNewChatOptions" class="icon-btn">✕</button></div>
+    <button class="option-row" id="optPrivate"><span>💬</span>پیام خصوصی</button>
+    <button class="option-row" id="optGroup"><span>👥</span>گروه جدید</button>
+    <button class="option-row" id="optChannel"><span>📢</span>کانال</button>
+  </div>
+</div>
+
+<!-- ===================== مودال گفتگوی خصوصی جدید ===================== -->
+<div id="newChatModal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head"><h3>پیام خصوصی جدید</h3><button id="closeNewChat" class="icon-btn">✕</button></div>
     <input id="newChatUsernameInput" type="text" placeholder="شناسه کاربری (@username)">
     <p id="newChatError" class="auth-error"></p>
     <div id="newChatResult" class="new-chat-result"></div>
+  </div>
+</div>
+
+<!-- ===================== مودال ساخت گروه ===================== -->
+<div id="groupModal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head"><h3>گروه جدید</h3><button id="closeGroupModal" class="icon-btn">✕</button></div>
+    <input id="groupNameInput" type="text" placeholder="اسم گروه">
+    <p id="groupModalError" class="auth-error"></p>
+    <div id="groupMembersList" class="member-picker-list"></div>
+    <button id="createGroupBtn" class="btn-primary full" style="margin-top:10px;">ساخت گروه</button>
+  </div>
+</div>
+
+<!-- ===================== مودال کانال (جستجو + ساخت) ===================== -->
+<div id="channelModal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head"><h3>کانال‌ها</h3><button id="closeChannelModal" class="icon-btn">✕</button></div>
+    <input id="channelSearchInput" type="text" placeholder="جستجوی کانال عمومی...">
+    <div id="channelSearchResults" class="member-picker-list"></div>
+    <div class="settings-divider"></div>
+    <button id="showCreateChannelFormBtn" class="btn-outline full">+ ساخت کانال جدید</button>
+    <div id="createChannelForm" hidden style="margin-top:10px;">
+      <input id="channelNameInput" type="text" placeholder="اسم کانال">
+      <input id="channelDescInput" type="text" placeholder="توضیحات (اختیاری)" style="margin-top:8px;">
+      <label class="checkbox-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <input type="checkbox" id="channelPublicCheck" checked> کانال عمومی (قابل جستجو)
+      </label>
+      <p id="channelModalError" class="auth-error"></p>
+      <button id="createChannelBtn" class="btn-primary full" style="margin-top:8px;">ساخت کانال</button>
+    </div>
   </div>
 </div>
 
