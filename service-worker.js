@@ -14,7 +14,7 @@
  * کرده‌اند ممکن است نسخه کش‌شده قدیمی را (به‌خصوص در حالت آفلاین) ببینند.
  */
 
-const CACHE_VERSION = "hoviyat-supabase-secret-v1";
+const CACHE_VERSION = "hoviyat-supabase-secret-v2";
 
 const SHELL_FILES = [
   "./",
