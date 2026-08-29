@@ -1,10 +1,10 @@
 /**
  * smartspace.js
  * نوار هوشمند بالای صفحه اصلی: آب‌وهوای واقعی شهر کاربر (Open-Meteo، رایگان و
- * بدون کلید) + یادداشت سریع (ذخیره‌شده در Firestore برای همان کاربر).
+ * بدون کلید) + یادداشت سریع (ذخیره‌شده در Supabase برای همان کاربر).
  */
-import { auth, db } from "./firebase-init.js";
-import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { supabase, auth } from "./supabase-init.js";
+import { icon } from "./icons.js";
 
 const WMO_TEXT = {
   0: "آسمان صاف", 1: "کمی ابری", 2: "نیمه ابری", 3: "ابری",
@@ -31,22 +31,32 @@ async function fetchWeather(lat, lon) {
   return json.current;
 }
 
+function escapeAttr(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
 export async function renderSmartSpace(container) {
   const uid = auth.currentUser.uid;
-  const userSnap = await getDoc(doc(db, "users", uid));
-  const cityName = userSnap.data()?.weatherCity || "بیرجند";
-  const noteSnap = await getDoc(doc(db, "notes", uid));
-  const noteText = noteSnap.exists() ? noteSnap.data().text || "" : "";
+  const { data: userRow } = await supabase.from("profiles").select("weather_city").eq("id", uid).maybeSingle();
+  const cityName = userRow?.weather_city || "بیرجند";
+  const { data: noteRow } = await supabase.from("notes").select("text").eq("user_id", uid).maybeSingle();
+  const noteText = noteRow?.text || "";
 
   container.innerHTML = `
     <div class="smartspace">
       <div class="ss-weather" id="ssWeather">
-        <span class="ss-icon">🌤️</span>
-        <div class="ss-weather-text"><span id="ssCity">${cityName}</span><small>در حال دریافت…</small></div>
+        <span class="ss-icon-badge ss-icon-weather">${icon("cloudSun", { size: 17 })}</span>
+        <div class="ss-weather-text">
+          <span id="ssCity">${escapeAttr(cityName)}</span>
+          <small>در حال دریافت…</small>
+        </div>
       </div>
       <div class="ss-note">
-        <span class="ss-icon">📝</span>
-        <input id="ssNoteInput" class="ss-note-input" placeholder="یادداشت سریع…" value="${noteText.replace(/"/g, "&quot;")}">
+        <span class="ss-icon-badge ss-icon-note">${icon("stickyNote", { size: 16 })}</span>
+        <div class="ss-note-body">
+          <small class="ss-note-label">یادداشت سریع</small>
+          <input id="ssNoteInput" class="ss-note-input" placeholder="یادداشت سریع…" value="${escapeAttr(noteText)}">
+        </div>
       </div>
     </div>
   `;
@@ -56,7 +66,7 @@ export async function renderSmartSpace(container) {
     clearTimeout(noteTimer);
     const text = e.target.value;
     noteTimer = setTimeout(() => {
-      setDoc(doc(db, "notes", uid), { text, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+      supabase.from("notes").upsert({ user_id: uid, text, updated_at: new Date().toISOString() });
     }, 600);
   });
 
@@ -76,5 +86,5 @@ export async function renderSmartSpace(container) {
 
 export async function setWeatherCity(cityName) {
   const uid = auth.currentUser.uid;
-  await setDoc(doc(db, "users", uid), { weatherCity: cityName }, { merge: true });
+  await supabase.from("profiles").update({ weather_city: cityName }).eq("id", uid);
 }
