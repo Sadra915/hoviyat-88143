@@ -1,0 +1,55 @@
+/* HOVIYAT MOBILE/WEBVIEW LAYOUT HOTFIX
+   Full-viewport app, resilient to Android WebView/ToApp viewport quirks. */
+html,body{width:100%;min-width:0;margin:0;padding:0;}
+body{overflow:hidden!important;background:var(--hv-bg,#f4f6fb)!important;}
+#appShell{width:100vw!important;max-width:none!important;min-width:0!important;height:100dvh!important;min-height:100dvh!important;margin:0!important;box-sizing:border-box!important;}
+@supports not (height:100dvh){#appShell{height:100vh!important;min-height:100vh!important;}}
+#appShell .views-area{width:100%!important;min-width:0!important;min-height:0!important;height:auto!important;}
+#appShell .view{max-width:none!important;min-width:0!important;box-sizing:border-box!important;}
+#appShell #view-home,#appShell #view-chat{width:100%!important;max-width:none!important;min-width:0!important;}
+#appShell #view-home{display:flex!important;flex-direction:column!important;}
+#appShell #view-home .chat-list{width:100%!important;box-sizing:border-box!important;flex:1 1 auto!important;min-height:0!important;height:auto!important;}
+#appShell .topbar{width:100%!important;box-sizing:border-box!important;}
+#appShell .topbar-row,#appShell .topbar-search{max-width:none!important;width:100%!important;box-sizing:border-box!important;}
+#appShell #view-chat{display:flex!important;flex-direction:column!important;}
+#appShell #view-chat .chat-header{flex:0 0 auto!important;}
+#appShell #view-chat .messages-area{flex:1 1 0!important;min-height:0!important;height:auto!important;max-height:none!important;}
+#appShell #view-chat .composer{flex:0 0 auto!important;}
+/* Never let the legacy desktop 480px shell constrain Android/WebView. */
+@media (min-width:640px){
+  .app-shell,#appShell{max-width:none!important;width:100vw!important;margin:0!important;box-shadow:none!important;}
+  body{overflow:hidden!important;background:var(--hv-bg,#f4f6fb)!important;}
+}
+/* WebView-safe touch scrolling */
+#appShell .chat-list,#appShell .messages-area,#appShell .settings-list,#appShell .view-title-bar,#appShell .view:not(#view-chat):not(#view-home){
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:auto!important;
+}
+/* Keep bottom navigation inside the visible viewport. */
+#appShell .bottom-nav{bottom:max(8px,env(safe-area-inset-bottom))!important;}
+
+
+/* CHAT COMPOSER CLEARANCE HOTFIX
+   Global floating controls must never cover the message composer.
+   When a conversation is open, the composer owns the bottom edge. */
+#appShell[data-chat-open="1"] .bottom-nav,
+#appShell[data-chat-open="1"] .fab {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+#appShell[data-chat-open="1"] #view-chat .composer {
+  position: relative !important;
+  z-index: 40 !important;
+  margin-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+}
+
+#appShell[data-chat-open="1"] #view-chat .messages-area {
+  padding-bottom: 12px !important;
+}
+
+/* Floating controls are only meaningful on screens that own them. */
+#appShell #view-chat ~ .fab {
+  display: none !important;
+}

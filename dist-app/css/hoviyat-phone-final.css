@@ -1,0 +1,111 @@
+/* FINAL PHONE/WEBVIEW OVERRIDE
+   Android wrappers can expose a ~980px CSS viewport on a phone. In that case
+   media queries think the device is desktop and the home pane becomes only
+   the 300-380px sidebar. Force a true single-column phone layout. */
+html.hv-phone-webview,
+html.hv-phone-webview body { width:100%; min-width:0; max-width:none; }
+html.hv-phone-webview body { overflow:hidden !important; }
+html.hv-phone-webview #appShell {
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  height:100vh !important;
+  height:var(--hv-vh, 100dvh) !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin:0 !important;
+  display:grid !important;
+  grid-template-rows:auto minmax(0,1fr) !important;
+  overflow:hidden !important;
+}
+html.hv-phone-webview #appShell .topbar {
+  width:100% !important;
+  max-width:none !important;
+  box-sizing:border-box !important;
+}
+html.hv-phone-webview #appShell .hv-product-strip { display:none !important; }
+html.hv-phone-webview #appShell .views-area {
+  display:block !important;
+  position:relative !important;
+  width:100% !important;
+  height:auto !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+html.hv-phone-webview #appShell .views-area > .view:not([hidden]) {
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:100% !important;
+  inset:0 !important;
+  box-sizing:border-box !important;
+}
+html.hv-phone-webview #appShell #view-home {
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+}
+html.hv-phone-webview #appShell #view-home .chat-list {
+  flex:1 1 auto !important;
+  width:100% !important;
+  min-height:0 !important;
+  height:auto !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+html.hv-phone-webview #appShell #view-chat {
+  display:flex !important;
+  flex-direction:column !important;
+  width:100% !important;
+  height:100% !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+html.hv-phone-webview #appShell #view-chat .messages-area {
+  flex:1 1 0 !important;
+  min-height:0 !important;
+  height:auto !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+html.hv-phone-webview #appShell .bottom-nav {
+  display:flex !important;
+  position:fixed !important;
+  left:50% !important;
+  right:auto !important;
+  width:calc(100vw - 20px) !important;
+  max-width:460px !important;
+  transform:translateX(-50%) !important;
+  bottom:max(8px, env(safe-area-inset-bottom)) !important;
+}
+html.hv-phone-webview #appShell .fab { right:18px !important; left:auto !important; }
+/* Never let the legacy desktop rule reintroduce a narrow sidebar. */
+html.hv-phone-webview #appShell .views-area #view-home,
+html.hv-phone-webview #appShell .views-area #view-chat { grid-column:auto !important; grid-row:auto !important; }
+
+/* NAVIGATION INVARIANT — hidden must always win over legacy responsive display rules.
+   This is intentionally the last rule in the cascade. */
+html.hv-phone-webview #appShell .view[hidden],
+#appShell .view[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Conversation owns the mobile viewport; Home/FAB/bottom navigation never overlays it. */
+html.hv-phone-webview #appShell[data-chat-open="1"] #view-chat {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 60 !important;
+}
+html.hv-phone-webview #appShell[data-chat-open="1"] #view-home,
+html.hv-phone-webview #appShell[data-chat-open="1"] .bottom-nav,
+html.hv-phone-webview #appShell[data-chat-open="1"] .fab {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}

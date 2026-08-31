@@ -1,0 +1,308 @@
+/* =====================================================================
+   HOVIYAT UI v2
+   Communication-first design system
+   هدف: ساده‌تر، سریع‌تر، خواناتر و نزدیک‌تر به الگوی پیام‌رسان‌های مدرن
+   بدون تغییر در منطق JavaScript یا قراردادهای Supabase
+   ===================================================================== */
+
+#appShell{
+  --ui-bg:#f5f6f8;
+  --ui-surface:#ffffff;
+  --ui-surface-2:#f1f2f4;
+  --ui-border:rgba(20,24,31,.075);
+  --ui-text:#17191d;
+  --ui-muted:#747982;
+  --ui-shadow:0 1px 2px rgba(20,24,31,.04),0 8px 28px rgba(20,24,31,.045);
+  --ui-radius:14px;
+  background:var(--ui-bg);
+  color:var(--ui-text);
+}
+
+html[data-theme="dark"] #appShell{
+  --ui-bg:#0b0c0f;
+  --ui-surface:#121418;
+  --ui-surface-2:#1a1d22;
+  --ui-border:rgba(255,255,255,.075);
+  --ui-text:#f3f4f6;
+  --ui-muted:#9297a1;
+  --ui-shadow:0 1px 2px rgba(0,0,0,.28),0 10px 30px rgba(0,0,0,.16);
+}
+
+/* -------- Remove the heavy glass/card look from the core messenger -------- */
+#appShell .glass{
+  background:var(--ui-surface);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  border:0;
+  box-shadow:none;
+}
+
+#appShell .topbar{
+  gap:10px;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background:var(--ui-surface);
+  border-bottom:1px solid var(--ui-border);
+  box-shadow:none;
+}
+
+#appShell .topbar-row{min-height:40px;}
+#appShell .brand{font-size:1.18rem;font-weight:800;letter-spacing:-.25px;}
+#appShell .topbar-avatar{width:34px;height:34px;box-shadow:none;}
+#appShell .topbar-avatar:hover{filter:brightness(.98);}
+
+#appShell .topbar-search{
+  height:40px;
+  padding:0 13px;
+  border:1px solid var(--ui-border);
+  background:var(--ui-surface-2);
+  border-radius:12px;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+#appShell .topbar-search:focus-within{
+  border-color:rgba(240,101,30,.45);
+  box-shadow:0 0 0 3px rgba(240,101,30,.08);
+  background:var(--ui-surface);
+}
+#appShell .topbar-search input{font-size:.84rem;}
+
+#appShell .views-area{background:var(--ui-bg);}
+#appShell .view{scrollbar-width:thin;scrollbar-color:rgba(120,125,135,.25) transparent;}
+
+/* -------- Home: list first, decoration second -------- */
+#appShell #view-home{background:var(--ui-bg);}
+#appShell .filter-tabs{
+  gap:6px;
+  padding:10px 14px 8px;
+  background:var(--ui-surface);
+  border-bottom:1px solid var(--ui-border);
+}
+#appShell .filter-tab{
+  flex:0 0 auto;
+  padding:7px 12px;
+  min-height:32px;
+  border-radius:9px;
+  color:var(--ui-muted);
+  font-size:.73rem;
+  font-weight:600;
+  background:transparent;
+  transition:background .18s ease,color .18s ease,transform .18s ease;
+}
+#appShell .filter-tab:hover{background:var(--ui-surface-2);}
+#appShell .filter-tab.active{
+  background:rgba(240,101,30,.11);
+  color:var(--orange);
+}
+#appShell .filter-sort-btn{width:32px;height:32px;margin-inline-start:auto;flex:0 0 32px;}
+
+#appShell .chat-list{padding:2px 0 96px;background:var(--ui-surface);min-height:100%;}
+#appShell .chat-item{
+  margin:0;
+  border-radius:0;
+  padding:11px 16px;
+  min-height:68px;
+  border-bottom:1px solid var(--ui-border);
+  background:var(--ui-surface);
+  box-shadow:none;
+  transition:background .16s ease;
+}
+#appShell .chat-item:hover{background:var(--ui-surface-2);transform:none;}
+#appShell .chat-item:active{background:rgba(240,101,30,.06);}
+#appShell .chat-avatar{width:48px;height:48px;flex:0 0 48px;box-shadow:none;}
+#appShell .chat-item .chat-name{font-size:.9rem;font-weight:700;}
+#appShell .chat-item .chat-preview{font-size:.77rem;color:var(--ui-muted);line-height:1.5;}
+#appShell .chat-item .chat-time{font-size:.66rem;color:var(--ui-muted);}
+#appShell .chat-item.unread .chat-time{color:var(--orange);font-weight:700;}
+
+#appShell .fab{
+  width:54px;height:54px;
+  right:18px;bottom:84px;
+  border-radius:17px;
+  box-shadow:0 7px 20px rgba(240,101,30,.28);
+}
+
+/* -------- Chat: content dominates the screen -------- */
+#appShell #view-chat{background:var(--ui-bg);}
+#appShell .chat-header{
+  min-height:58px;
+  padding:7px 10px;
+  background:var(--ui-surface);
+  border-bottom:1px solid var(--ui-border);
+  box-shadow:none;
+}
+#appShell .chat-header-avatar{width:40px;height:40px;}
+#appShell .chat-header-profile-area{padding:3px 5px;}
+#appShell .chat-header-profile-area:hover{background:var(--ui-surface-2);}
+#appShell .chat-header-info strong{font-size:.88rem;}
+#appShell .chat-header-status{font-size:.68rem;}
+#appShell .chat-header-actions{gap:0;}
+#appShell .chat-header-actions .icon-btn{width:36px;height:36px;}
+
+#appShell .messages-area{
+  padding:14px 12px 12px;
+  background:
+    radial-gradient(rgba(240,101,30,.035) 1px,transparent 1px),
+    var(--ui-bg);
+  background-size:24px 24px,100% 100%;
+}
+html[data-theme="dark"] #appShell .messages-area{
+  background:
+    radial-gradient(rgba(240,101,30,.035) 1px,transparent 1px),
+    var(--ui-bg);
+  background-size:24px 24px,100% 100%;
+}
+#appShell .bubble-row{margin-bottom:5px;}
+#appShell .bubble-row.grouped-first,#appShell .bubble-row.grouped-middle{margin-bottom:2px;}
+#appShell .bubble{
+  max-width:min(78%,520px);
+  padding:8px 11px 7px;
+  border-radius:15px;
+  box-shadow:0 1px 2px rgba(20,24,31,.06);
+}
+#appShell .bubble.mine{border-bottom-right-radius:5px;}
+#appShell .bubble.theirs{background:var(--ui-surface);border-bottom-left-radius:5px;}
+#appShell .bubble-text{font-size:.88rem;line-height:1.58;}
+#appShell .bubble-time{font-size:.59rem;margin-top:2px;}
+#appShell .day-divider{margin:11px 0;}
+#appShell .day-divider span{background:rgba(116,121,130,.12);font-size:.64rem;padding:3px 10px;}
+
+#appShell .composer{
+  gap:7px;
+  padding:7px 9px calc(7px + env(safe-area-inset-bottom));
+  background:var(--ui-surface);
+  border-top:1px solid var(--ui-border);
+  box-shadow:none;
+}
+#appShell .composer .icon-btn{width:38px;height:38px;}
+#appShell .composer input[type="text"]{
+  min-height:40px;
+  padding:9px 14px;
+  border:1px solid var(--ui-border);
+  background:var(--ui-surface-2);
+  border-radius:12px;
+  font-size:.84rem;
+}
+#appShell .composer input[type="text"]:focus{outline:none;border-color:rgba(240,101,30,.45);box-shadow:0 0 0 3px rgba(240,101,30,.08);}
+#appShell .send-btn{width:40px;height:40px;box-shadow:none;}
+
+/* -------- Titles and content surfaces -------- */
+#appShell .view-title-bar{
+  padding:16px 16px 10px;
+  background:var(--ui-surface);
+  border-bottom:1px solid var(--ui-border);
+}
+#appShell .view-title-bar h2{font-size:1.08rem;font-weight:800;}
+#appShell .settings-list{padding:12px 12px 40px;gap:10px;}
+#appShell .settings-item,
+#appShell .security-row,
+#appShell .settings-avatar-row{
+  border-radius:12px;
+  background:var(--ui-surface);
+  border:1px solid var(--ui-border);
+  box-shadow:none;
+}
+#appShell .settings-item{padding:12px 14px;}
+#appShell .settings-item:hover{background:var(--ui-surface-2);}
+#appShell .settings-subhead{font-size:.76rem;color:var(--ui-muted);font-weight:700;padding:4px 4px 0;}
+#appShell .settings-divider{height:1px;background:var(--ui-border);margin:3px 2px;}
+
+/* Identity card: cleaner and less like a dashboard */
+#appShell .idcard{
+  margin:14px;
+  padding:24px 18px;
+  border-radius:18px;
+  background:var(--ui-surface);
+  border:1px solid var(--ui-border);
+  box-shadow:var(--ui-shadow);
+}
+#appShell .idcard-photo{width:82px;height:82px;box-shadow:none;}
+#appShell .idcard-info-rows{background:var(--ui-surface-2);border-radius:12px;}
+#appShell .idcard-info-rows .info-row{border-bottom-color:var(--ui-border);}
+
+/* -------- Modals become mobile-first bottom sheets -------- */
+#appShell .modal{padding:12px;align-items:flex-end;background:rgba(9,11,14,.46);}
+#appShell .modal-box{
+  width:min(520px,100%);
+  max-height:min(88dvh,760px);
+  overflow:auto;
+  border-radius:20px;
+  padding:18px;
+  background:var(--ui-surface);
+  border:1px solid var(--ui-border);
+  box-shadow:0 18px 60px rgba(0,0,0,.22);
+  transform:translateY(18px) scale(.99);
+}
+#appShell .modal.open .modal-box{transform:translateY(0) scale(1);}
+#appShell .modal-head{margin-bottom:12px;}
+#appShell .modal-head h3{font-size:.98rem;font-weight:800;}
+#appShell .modal-box input[type="text"],
+#appShell .modal-box input[type="password"],
+#appShell .modal-box input[type="number"],
+#appShell .modal-box textarea,
+#appShell .modal-box select{
+  border-radius:11px;
+  border:1px solid var(--ui-border);
+  background:var(--ui-surface-2);
+}
+
+/* -------- Buttons: one visual hierarchy -------- */
+#appShell .btn-primary{border-radius:11px;min-height:42px;}
+#appShell .btn-outline{border-radius:11px;border-color:var(--ui-border);}
+#appShell .icon-btn:hover{background:var(--ui-surface-2);}
+
+/* -------- Bottom navigation: quiet, compact, native-app feeling -------- */
+#appShell .bottom-nav{
+  height:64px;
+  padding:5px 7px calc(5px + env(safe-area-inset-bottom));
+  background:var(--ui-surface);
+  border-top:1px solid var(--ui-border);
+  box-shadow:0 -5px 20px rgba(20,24,31,.035);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+#appShell .nav-btn{
+  gap:2px;
+  padding:5px 4px;
+  border-radius:10px;
+  font-size:.62rem;
+  color:var(--ui-muted);
+}
+#appShell .nav-icon{font-size:1.05rem;}
+#appShell .nav-btn.active{color:var(--orange);font-weight:700;}
+#appShell .nav-btn.active::before{
+  content:"";
+  position:absolute;
+  top:1px;
+  width:26px;height:3px;
+  border-radius:99px;
+  background:var(--orange);
+}
+#appShell .nav-btn.active .nav-icon{transform:none;}
+
+/* -------- Secret space remains visually distinct, but cleaner -------- */
+#appShell .secret-space{background:#0f0d0b;}
+#appShell .secret-space .chat-header{background:#15120f;border-bottom-color:rgba(255,255,255,.06);}
+#appShell .secret-space .composer{background:#15120f;border-top-color:rgba(255,255,255,.06);}
+
+/* -------- Desktop: turn the app into a centered product shell -------- */
+@media (min-width:760px){
+  body{background:#e9ebee;}
+  #appShell{
+    width:min(1080px,100vw);
+    margin:0 auto;
+    box-shadow:0 0 0 1px rgba(20,24,31,.04),0 12px 50px rgba(20,24,31,.08);
+  }
+  #appShell .topbar{padding-left:22px;padding-right:22px;}
+  #appShell .topbar-search{max-width:560px;align-self:center;width:100%;}
+  #appShell .chat-list{max-width:760px;margin:0 auto;border-inline:1px solid var(--ui-border);}
+  #appShell .filter-tabs{justify-content:center;}
+  #appShell .messages-area{padding-inline:clamp(18px,7vw,90px);}
+  #appShell .composer{padding-inline:clamp(18px,7vw,90px);}
+  #appShell .bottom-nav{max-width:680px;margin:0 auto;border-inline:1px solid var(--ui-border);}
+}
+
+/* -------- Accessibility / touch -------- */
+#appShell button,#appShell input{touch-action:manipulation;}
+#appShell button:focus-visible,#appShell input:focus-visible{outline:2px solid rgba(240,101,30,.65);outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){
+  #appShell *{animation-duration:.01ms !important;transition-duration:.01ms !important;scroll-behavior:auto !important;}
+}

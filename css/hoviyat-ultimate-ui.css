@@ -1,0 +1,144 @@
+/* HOVIYAT ULTIMATE UI: visual refresh, atmosphere, motion, responsive safety. */
+:root{
+  --hu-bg:#e8edf5;
+  --hu-glass:rgba(255,255,255,.48);
+  --hu-glass-strong:rgba(255,255,255,.68);
+  --hu-line:rgba(255,255,255,.62);
+  --hu-text:#172033;
+  --hu-muted:#738096;
+  --hu-a:#7658ff;
+  --hu-b:#318bff;
+  --hu-shadow:0 18px 50px rgba(30,48,80,.12);
+  --hu-blur:24px;
+  --hu-radius:20px;
+}
+html[data-theme="dark"]{
+  --hu-bg:#0d131c;
+  --hu-glass:rgba(20,27,39,.50);
+  --hu-glass-strong:rgba(24,32,46,.70);
+  --hu-line:rgba(255,255,255,.11);
+  --hu-text:#edf2fb;
+  --hu-muted:#98a7bb;
+  --hu-shadow:0 24px 70px rgba(0,0,0,.30);
+}
+html,body{min-width:0;max-width:none!important;width:100%;height:100%;}
+body{
+  background:
+    radial-gradient(circle at 8% 10%,rgba(118,88,255,.12),transparent 26%),
+    radial-gradient(circle at 94% 86%,rgba(49,139,255,.10),transparent 28%),
+    var(--hu-bg)!important;
+  color:var(--hu-text);
+}
+#appShell{max-width:none!important;width:100vw!important;min-width:0!important;height:100dvh!important;min-height:100dvh!important;background:transparent!important;}
+#appShell .views-area{min-width:0!important;min-height:0!important;background:transparent!important;}
+#appShell .view{min-width:0!important;min-height:0!important;}
+#appShell .view:not([hidden]){contain:layout style paint;}
+/* Unified frosted surfaces. */
+#appShell .glass,
+#appShell .topbar,
+#appShell .chat-header,
+#appShell .composer,
+#appShell .bottom-nav,
+#appShell .modal-box,
+#appShell .chat-card,
+#appShell .settings-item,
+#appShell .idcard,
+#appShell .contact-action,
+#appShell .admin-table-wrap,
+#appShell .hv-setting-card,
+#appShell .control-center-card,
+#appShell .hv-latest,
+#appShell .reply-preview-bar,
+#appShell .voice-record-bar,
+#appShell .pinned-bar{
+  background:var(--hu-glass)!important;
+  border:1px solid var(--hu-line)!important;
+  box-shadow:var(--hu-shadow)!important;
+  -webkit-backdrop-filter:blur(var(--hu-blur)) saturate(155%);
+  backdrop-filter:blur(var(--hu-blur)) saturate(155%);
+}
+#appShell .topbar{z-index:80!important;border-radius:0 0 22px 22px!important;}
+#appShell .chat-header{z-index:60!important;border-radius:0!important;}
+#appShell .chat-list{background:transparent!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;}
+#appShell .chat-card{border-radius:18px!important;margin:4px 8px!important;}
+#appShell .chat-card:hover{background:var(--hu-glass-strong)!important;transform:translateY(-1px)!important;}
+#appShell .chat-card:active{transform:scale(.992)!important;}
+#appShell #view-chat,
+#appShell #view-secretchat{display:flex!important;flex-direction:column!important;height:100%!important;overflow:hidden!important;position:relative!important;}
+#appShell .messages-area{flex:1 1 0!important;min-height:0!important;height:auto!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch!important;scrollbar-gutter:stable both-edges;background:transparent!important;position:relative;}
+#appShell .messages-area::before{
+  content:"💬   ✦   ◇   ✨   🌙   ·   💜   ☁️   ◌   ✦";
+  position:absolute;inset:-18% -10%;z-index:0;pointer-events:none;white-space:pre-wrap;word-spacing:34px;line-height:6;font-size:17px;letter-spacing:14px;opacity:.038;transform:rotate(-8deg);animation:huAtmosphere 38s linear infinite;
+}
+#appShell .messages-area>*{position:relative;z-index:1;}
+#appShell .bubble{border-radius:18px!important;border:1px solid var(--hu-line)!important;box-shadow:0 8px 24px rgba(25,36,58,.07)!important;transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease!important;}
+#appShell .bubble.theirs{background:rgba(255,255,255,.44)!important;-webkit-backdrop-filter:blur(10px) saturate(120%);backdrop-filter:blur(10px) saturate(120%);}
+html[data-theme="dark"] #appShell .bubble.theirs{background:rgba(25,33,47,.48)!important;}
+#appShell .bubble.mine{background:linear-gradient(135deg,rgba(118,88,255,.94),rgba(49,139,255,.90))!important;border-color:transparent!important;}
+#appShell .bubble-row.is-new{animation:huMessageIn .22s cubic-bezier(.2,.8,.2,1) both;}
+#appShell .composer{z-index:70!important;flex:0 0 auto!important;margin:8px 12px max(10px,env(safe-area-inset-bottom))!important;border-radius:24px!important;min-height:56px!important;padding:7px 9px!important;}
+#appShell .composer input[type="text"]{background:rgba(255,255,255,.20)!important;border:1px solid rgba(255,255,255,.25)!important;min-height:42px!important;}
+#appShell .composer input[type="text"]:focus{outline:2px solid color-mix(in srgb,var(--hu-a) 50%,transparent)!important;outline-offset:-2px;}
+#appShell .send-btn{background:linear-gradient(135deg,var(--hu-a),var(--hu-b))!important;box-shadow:0 8px 24px rgba(84,79,220,.25)!important;}
+#appShell .bottom-nav{z-index:90!important;border-radius:22px!important;}
+#appShell .fab{z-index:85!important;}
+#appShell[data-chat-open="1"] .bottom-nav,
+#appShell[data-chat-open="1"] .fab{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+/* AI panel lives in the conversation chrome, never over the composer. */
+#appShell .chat-ai-panel{margin:6px 12px 0!important;order:5;}
+#appShell #composerForm{order:6;}
+#appShell #channelViewOnlyBar{order:7;}
+#appShell .chat-ai-panel[hidden]{display:none!important;}
+/* Frosted editor surfaces and controls. */
+.hv-editor{background:var(--hu-glass-strong)!important;border:1px solid var(--hu-line)!important;box-shadow:var(--hu-shadow)!important;-webkit-backdrop-filter:blur(26px) saturate(150%);backdrop-filter:blur(26px) saturate(150%);}
+.hv-editor-stage{background:rgba(9,12,18,.88)!important;}
+.hv-editor-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.hv-editor-tools button,.hv-sticker-btn{border:1px solid var(--hu-line);background:rgba(255,255,255,.15);color:inherit;border-radius:13px;padding:8px 10px;font:inherit;cursor:pointer;transition:transform .16s ease,background .16s ease;}
+.hv-editor-tools button:hover,.hv-sticker-btn:hover{background:rgba(118,88,255,.12);transform:translateY(-1px);}
+.hv-editor-tools button.active{background:linear-gradient(135deg,rgba(118,88,255,.20),rgba(49,139,255,.14));border-color:rgba(118,88,255,.34);}
+/* Settings with glass grouping. */
+#appShell .settings-list{overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;padding-bottom:120px!important;}
+#appShell .settings-item{border-radius:16px!important;margin:5px 10px!important;}
+#appShell .settings-item:hover{background:var(--hu-glass-strong)!important;}
+/* Menus and sheets. */
+#appShell .modal{z-index:500!important;background:rgba(5,9,16,.44)!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+#appShell .modal-box{border-radius:24px!important;max-height:min(92dvh,820px)!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important;}
+/* Motion library. */
+@keyframes huMessageIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes huAtmosphere{from{transform:translate3d(0,0,0) rotate(-8deg)}50%{transform:translate3d(-2%,1%,0) rotate(-7.5deg)}to{transform:translate3d(-4%,0,0) rotate(-8deg)}}
+@keyframes huEmojiPop{0%{transform:scale(.55) rotate(-8deg);opacity:0}60%{transform:scale(1.15) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+@keyframes huReactionBurst{0%{opacity:0;transform:translateY(8px) scale(.5)}45%{opacity:1;transform:translateY(-5px) scale(1.16)}100%{opacity:0;transform:translateY(-28px) scale(.82)}}
+@keyframes huPresencePulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.20)}50%{box-shadow:0 0 0 8px rgba(52,211,153,0)}}
+@keyframes huSendPulse{0%{transform:scale(.92)}65%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes huSheetIn{from{opacity:0;transform:translateY(22px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes huGlassShimmer{from{transform:translateX(-120%)}to{transform:translateX(120%)}}
+#appShell .reaction-chip{animation:huEmojiPop .24s ease both;}
+#appShell .send-btn:active{animation:huSendPulse .24s ease both;}
+#appShell .chat-header-status.on::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#32d583;margin-inline-end:5px;vertical-align:middle;animation:huPresencePulse 2s infinite;}
+#appShell .modal.open .modal-box{animation:huSheetIn .22s ease both;}
+/* Floating glass sheen, kept subtle. */
+#appShell .glass::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(110deg,transparent 0 42%,rgba(255,255,255,.08) 48%,transparent 55%);transform:translateX(-130%);animation:huGlassShimmer 9s linear infinite;}
+#appShell .bubble::after,.chat-card::after,.settings-item::after{display:none!important;}
+/* Do not allow hidden app chrome to reserve or intercept touch. */
+#appShell[hidden],#appShell[hidden] *{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+.view[hidden],.modal[hidden],input[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+/* Phone-safe layout even if WebView advertises a wide viewport. */
+html.hv-phone-webview #appShell .views-area{display:block!important;}
+html.hv-phone-webview #appShell .views-area>.view:not([hidden]){width:100%!important;height:100%!important;max-width:none!important;}
+html.hv-phone-webview #appShell #view-home,
+html.hv-phone-webview #appShell #view-chat,
+html.hv-phone-webview #appShell #view-secretchat{width:100%!important;min-width:0!important;max-width:none!important;}
+html.hv-phone-webview #appShell .topbar{width:100%!important;}
+/* Accessibility/performance. */
+@media(prefers-reduced-motion:reduce){
+  #appShell *,#appShell *::before,#appShell *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important;}
+}
+html[data-power="saving"] #appShell .glass,html[data-power="saving"] #appShell .modal-box{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
+@media(max-width:760px){
+  #appShell .topbar{border-radius:0 0 18px 18px!important;}
+  #appShell .chat-header{padding-inline:8px!important;}
+  #appShell .messages-area{padding:12px 8px 14px!important;}
+  #appShell .bubble{max-width:88%!important;}
+  #appShell .composer{margin-inline:7px!important;border-radius:21px!important;}
+  #appShell .glass{--hu-blur:18px;}
+}

@@ -1,0 +1,867 @@
+/* =========================================================================
+   هویت | style.css
+   هویت بصری: نارنجی #F0651E، پس‌زمینه کرم #F3F1EE، خاکستری تیره #2E2E2E
+   گوشه‌های ۲۰px، انیمیشن‌های نرم ۲۰۰-۳۰۰ms، دارک‌مود سه‌لایه
+   ========================================================================= */
+
+:root{
+  --orange:#F0651E;
+  --orange-dark:#d1550f;
+  --cream:#F3F1EE;
+  --dark-gray:#2E2E2E;
+  --white:#FFFFFF;
+  --text-hi:#2E2E2E;
+  --text-mid:rgba(46,46,46,.65);
+  --text-low:rgba(46,46,46,.42);
+  --card-bg:#FFFFFF;
+  --card-shadow:0 4px 18px rgba(46,46,46,.08);
+  --radius-lg:20px;
+  --radius-md:16px;
+  --radius-sm:10px;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --dur:240ms;
+  --glass-bg:rgba(255,255,255,.72);
+  --glass-border:rgba(255,255,255,.5);
+  color-scheme: light;
+}
+
+html[data-theme="dark"]{
+  --cream:#181818;
+  --dark-gray:#F3F1EE;
+  --text-hi:#F3F1EE;
+  --text-mid:rgba(243,241,238,.65);
+  --text-low:rgba(243,241,238,.42);
+  --card-bg:#222222;
+  --card-shadow:0 4px 18px rgba(0,0,0,.35);
+  --glass-bg:rgba(34,34,34,.68);
+  --glass-border:rgba(255,255,255,.08);
+  color-scheme: dark;
+}
+html[data-theme="dark"] body{ background:#181818; }
+html[data-theme="dark"] .bubble.theirs{ background:#2D2D2D; color:var(--text-hi); }
+
+*{box-sizing:border-box;}
+/* اصلاح مهم: بدون این قانون، هر کلاسی که display خودش را ست کند (مثل flex)
+   می‌تواند به‌طور ناخواسته روی ویژگی استاندارد hidden غلبه کند و عنصر را با
+   وجود hidden=true نمایش دهد. این باگ واقعی چند جا (فرم ورود/ثبت‌نام، نوار
+   ضبط صدا، composer) وجود داشت. این یک قانون آن را برای همیشه حل می‌کند. */
+[hidden]{display:none !important;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:"Vazirmatn","Tahoma",sans-serif;
+  background:var(--cream);
+  color:var(--text-hi);
+  overflow:hidden;
+  transition:background var(--dur) var(--ease);
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+input{font-family:inherit;}
+p{margin:0;}
+::selection{background:var(--orange);color:#fff;}
+
+/* ---------------------------- شیشه‌ای (Glassmorphism) ---------------------------- */
+.glass{
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);
+  backdrop-filter:blur(22px) saturate(180%);
+  border:1px solid var(--glass-border);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+}
+html[data-theme="dark"] .glass{box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
+
+/* ---------------------------- آیکون‌های خطی (جایگزین ایموجی) ---------------------------- */
+.ic{display:inline-block;vertical-align:middle;flex-shrink:0;}
+.chat-kind-ic{vertical-align:-3px;opacity:.75;margin-inline-end:1px;}
+
+/* ---------------------------- صفحه بارگذاری ---------------------------- */
+.boot-screen{
+  position:fixed;inset:0;z-index:999;background:var(--orange);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .5s var(--ease), visibility .5s var(--ease);
+  overflow:hidden;
+}
+.boot-screen::before{
+  content:"";position:absolute;inset:-20%;pointer-events:none;
+  background:
+    radial-gradient(38% 30% at 25% 30%, rgba(255,255,255,.30), transparent 70%),
+    radial-gradient(32% 26% at 78% 68%, rgba(255,255,255,.22), transparent 70%);
+  animation:auroraDrift 9s ease-in-out infinite alternate;
+}
+.boot-screen.hide{opacity:0;visibility:hidden;}
+.global-error-banner{
+  position:fixed;top:0;left:0;right:0;z-index:9999;background:#3a1010;color:#ffdada;
+  padding:14px 16px;font-size:.8rem;line-height:1.7;text-align:center;
+}
+.global-error-banner code{display:block;margin-top:6px;font-size:.7rem;opacity:.85;direction:ltr;word-break:break-all;}
+.announcement-banner{
+  display:flex;align-items:center;gap:8px;background:rgba(240,101,30,.12);color:var(--text-hi);
+  padding:9px 14px;font-size:.78rem;line-height:1.6;
+}
+.announcement-banner span:nth-child(2){flex:1;}
+.suspension-banner{background:rgba(220,53,69,.14);color:#c0392b;}
+html[data-theme="dark"] .suspension-banner{background:rgba(220,53,69,.22);color:#ff8a80;}
+.boot-logo{font-size:2.6rem;font-weight:800;color:#fff;letter-spacing:1px;position:relative;z-index:1;text-shadow:0 0 26px rgba(255,255,255,.55);animation:logoGlow 2.4s ease-in-out infinite;}
+.boot-dot{width:10px;height:10px;border-radius:50%;background:#fff;animation:bootPulse 1s ease-in-out infinite;position:relative;z-index:1;}
+@keyframes bootPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.6);opacity:.4;}}
+@keyframes logoGlow{0%,100%{text-shadow:0 0 18px rgba(255,255,255,.4);}50%{text-shadow:0 0 34px rgba(255,255,255,.75);}}
+@keyframes auroraDrift{
+  0%{transform:translate(0,0) rotate(0deg);}
+  100%{transform:translate(3%,-4%) rotate(8deg);}
+}
+
+/* ---------------------------- ورود/ثبت‌نام ---------------------------- */
+.auth-view{
+  height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:var(--cream);position:relative;overflow:hidden;
+}
+.auth-view::before{
+  content:"";position:absolute;inset:-25%;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(34% 26% at 20% 20%, rgba(240,101,30,.20), transparent 70%),
+    radial-gradient(30% 24% at 82% 30%, rgba(240,101,30,.14), transparent 70%),
+    radial-gradient(36% 28% at 60% 85%, rgba(240,101,30,.12), transparent 70%);
+  animation:auroraDrift 12s ease-in-out infinite alternate;
+}
+html[data-theme="dark"] .auth-view::before{
+  background:
+    radial-gradient(34% 26% at 20% 20%, rgba(240,101,30,.14), transparent 70%),
+    radial-gradient(30% 24% at 82% 30%, rgba(240,101,30,.10), transparent 70%),
+    radial-gradient(36% 28% at 60% 85%, rgba(240,101,30,.09), transparent 70%);
+}
+.auth-view > *{position:relative;z-index:1;}
+.auth-card{
+  width:min(380px,100%);background:var(--card-bg);border-radius:var(--radius-lg);
+  padding:32px 26px;box-shadow:var(--card-shadow);text-align:center;
+  animation:cardIn .4s var(--ease) both;position:relative;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.auth-logo{font-size:2rem;font-weight:800;color:var(--orange);margin:0 0 4px;}
+.auth-tagline{color:var(--text-mid);font-size:.85rem;margin-bottom:22px;}
+.welcome-card{position:relative;}
+.welcome-logo{width:84px;height:84px;margin:0 auto 14px;border-radius:22px;overflow:hidden;box-shadow:0 8px 20px rgba(240,101,30,.35);animation:welcomeLogoGlow 2.6s ease-in-out infinite;}
+.welcome-logo img{width:100%;height:100%;object-fit:cover;display:block;}
+@keyframes welcomeLogoGlow{
+  0%,100%{box-shadow:0 8px 20px rgba(240,101,30,.35);}
+  50%{box-shadow:0 8px 30px rgba(240,101,30,.6),0 0 0 8px rgba(240,101,30,.08);}
+}
+.welcome-card .btn-outline{margin-top:10px;}
+.auth-back-btn{position:absolute;top:14px;right:14px;}
+.auth-tabs{display:flex;background:var(--cream);border-radius:100px;padding:4px;margin-bottom:20px;}
+html[data-theme="dark"] .auth-tabs{background:#181818;}
+.auth-tab{flex:1;padding:9px;border-radius:100px;font-size:.85rem;color:var(--text-mid);transition:all var(--dur) var(--ease);position:relative;overflow:hidden;}
+.auth-tab.active{background:var(--orange);color:#fff;font-weight:700;}
+.auth-form{display:flex;flex-direction:column;gap:12px;animation:fadeIn .25s var(--ease);}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.auth-form input{
+  padding:13px 16px;border-radius:var(--radius-md);border:1.5px solid rgba(46,46,46,.10);
+  background:var(--cream);color:var(--text-hi);font-size:.9rem;transition:border-color var(--dur);
+}
+html[data-theme="dark"] .auth-form input{background:#181818;border-color:rgba(255,255,255,.08);}
+.auth-form input:focus{outline:none;border-color:var(--orange);}
+.auth-error{color:#d9364a;font-size:.78rem;min-height:1em;text-align:right;}
+
+.btn-primary{
+  background:var(--orange);color:#fff;font-weight:700;border-radius:var(--radius-md);
+  padding:13px;font-size:.9rem;transition:transform var(--dur) var(--ease), background var(--dur);
+  position:relative;overflow:hidden;
+}
+.btn-primary:hover{background:var(--orange-dark);}
+.btn-primary:active{transform:scale(.97);}
+.btn-primary.small{padding:8px 16px;font-size:.8rem;}
+.btn-outline.small{padding:6px 12px;font-size:.74rem;}
+.btn-outline{
+  background:transparent;border:1.5px solid rgba(46,46,46,.15);color:var(--text-hi);
+  border-radius:var(--radius-md);padding:12px;font-size:.88rem;transition:all var(--dur);
+  position:relative;overflow:hidden;
+}
+.btn-outline.danger{color:#d9364a;border-color:rgba(217,54,74,.35);}
+.btn-outline.danger:hover{background:rgba(217,54,74,.06);}
+.full{width:100%;}
+
+/* ---------------------------- پوسته اصلی ---------------------------- */
+.app-shell{height:100vh;height:100dvh;display:flex;flex-direction:column;}
+.topbar{
+  display:flex;flex-direction:column;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 14px;
+  box-shadow:0 1px 0 rgba(46,46,46,.06);z-index:10;
+}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:800;color:var(--orange);font-size:1.3rem;}
+.topbar-search{
+  display:flex;align-items:center;gap:8px;background:var(--cream);border-radius:100px;
+  padding:10px 14px;
+}
+html[data-theme="dark"] .topbar-search{background:#181818;}
+.topbar-search .search-icon{font-size:.9rem;opacity:.6;}
+.topbar-search input{flex:1;border:none;background:transparent;color:var(--text-hi);font-size:.82rem;}
+.topbar-search input:focus{outline:none;}
+.icon-btn{
+  width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.05rem;transition:background var(--dur) var(--ease), transform var(--dur);
+  position:relative;overflow:hidden;
+}
+.icon-btn:hover{background:rgba(46,46,46,.06);}
+.icon-btn:active{transform:scale(.9);}
+.topbar-avatar{
+  margin-inline-start:auto;width:36px;height:36px;border-radius:50%;background:var(--orange);
+  color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+
+.views-area{flex:1;position:relative;overflow:hidden;}
+.view{position:absolute;inset:0;overflow-y:auto;animation:viewIn var(--dur) var(--ease);}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.view-title-bar{padding:16px 18px 4px;}
+.view-title-bar h2{font-size:1.1rem;}
+
+/* ---------------------------- Smart Space ---------------------------- */
+.smartspace{
+  margin:12px 14px 4px;display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.ss-weather,.ss-note{
+  display:flex;align-items:center;gap:8px;border-radius:var(--radius-md);padding:12px;
+  box-shadow:var(--card-shadow);
+}
+.ss-weather{background:linear-gradient(135deg, rgba(240,101,30,.10), var(--card-bg));}
+.ss-note{background:var(--card-bg);border:1px solid rgba(240,101,30,.18);}
+.ss-icon-badge{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.05rem;flex-shrink:0;
+}
+.ss-icon-weather{background:rgba(245,166,35,.18);}
+.ss-icon-note{background:rgba(240,101,30,.14);}
+.ss-note-body{display:flex;flex-direction:column;min-width:0;flex:1;}
+.ss-note-label{color:var(--text-low);font-size:.66rem;margin-bottom:1px;}
+.ss-weather-text{display:flex;flex-direction:column;line-height:1.3;font-size:.82rem;min-width:0;}
+.ss-weather-text small{color:var(--text-mid);font-size:.7rem;}
+.ss-note-input{
+  border:none;background:transparent;color:var(--text-hi);font-size:.78rem;width:100%;min-width:0;
+}
+.ss-note-input:focus{outline:none;}
+.ss-note-input::placeholder{color:var(--text-low);}
+
+/* ---------------------------- تب‌های فیلتر (همه/خوانده‌نشده/گروه‌ها/کانال‌ها) ---------------------------- */
+.filter-tabs{display:flex;gap:8px;padding:12px 14px 4px;overflow-x:auto;}
+.filter-tab{
+  flex-shrink:0;padding:7px 16px;border-radius:100px;font-size:.78rem;color:var(--text-mid);
+  background:var(--card-bg);box-shadow:var(--card-shadow);transition:all var(--dur) var(--ease);
+}
+.filter-tab.active{background:var(--orange);color:#fff;font-weight:700;}
+
+/* ---------------------------- لیست چت (کارت‌محور) ---------------------------- */
+.chat-list{padding:6px 14px 90px;}
+.chat-card{
+  display:flex;align-items:center;gap:12px;background:var(--card-bg);border-radius:var(--radius-md);
+  box-shadow:var(--card-shadow);padding:12px 14px;margin-bottom:10px;cursor:pointer;
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur);
+}
+.chat-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(46,46,46,.12);}
+.chat-card:active{transform:scale(.98);}
+.chat-card.card-enter{animation:cardEnter .38s var(--ease) both;}
+@keyframes cardEnter{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+/* ---------------------------- اسکلت بارگذاری (Skeleton Shimmer) ---------------------------- */
+.skeleton-card{cursor:default;}
+.skeleton-circle,.skeleton-line{
+  border-radius:8px;background:linear-gradient(90deg, rgba(46,46,46,.08) 25%, rgba(46,46,46,.15) 37%, rgba(46,46,46,.08) 63%);
+  background-size:400% 100%;animation:skeletonShimmer 1.6s ease-in-out infinite;
+}
+html[data-theme="dark"] .skeleton-circle,html[data-theme="dark"] .skeleton-line{
+  background:linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.14) 37%, rgba(255,255,255,.06) 63%);
+  background-size:400% 100%;
+}
+.skeleton-circle{width:48px;height:48px;border-radius:50%;flex-shrink:0;}
+.skeleton-line{height:11px;margin:7px 0;}
+@keyframes skeletonShimmer{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+.chat-avatar-wrap{position:relative;flex-shrink:0;}
+.chat-avatar{
+  width:48px;height:48px;border-radius:50%;background:var(--orange);color:#fff;font-weight:700;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:1.1rem;
+}
+.chat-avatar img{width:100%;height:100%;object-fit:cover;}
+.online-dot{
+  position:absolute;bottom:0;left:0;width:12px;height:12px;border-radius:50%;
+  background:#2ecc71;border:2.5px solid var(--card-bg);
+}
+.online-dot::after{
+  content:"";position:absolute;inset:0;border-radius:50%;background:#2ecc71;
+  animation:onlinePulse 2.6s var(--ease) infinite;
+}
+@keyframes onlinePulse{
+  0%{transform:scale(1);opacity:.4;}
+  100%{transform:scale(2);opacity:0;}
+}
+.chat-card-body{flex:1;min-width:0;}
+.chat-card-top{display:flex;justify-content:space-between;align-items:baseline;}
+.chat-name{font-weight:700;font-size:.92rem;}
+.chat-time{font-size:.7rem;color:var(--text-low);}
+.chat-card-bottom{margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.chat-preview{font-size:.8rem;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;flex:1;min-width:0;}
+.unread-badge{
+  flex-shrink:0;background:var(--orange);color:#fff;font-size:.68rem;font-weight:700;
+  min-width:19px;height:19px;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 5px;
+}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-mid);}
+.empty-icon{margin-bottom:10px;opacity:.55;display:flex;justify-content:center;}
+
+.fab{
+  position:fixed;left:22px;bottom:86px;width:58px;height:58px;border-radius:50%;
+  background:var(--orange);color:#fff;font-size:1.7rem;box-shadow:0 8px 22px rgba(240,101,30,.45);
+  display:flex;align-items:center;justify-content:center;transition:transform var(--dur) var(--ease);
+  z-index:20;overflow:hidden;animation:fabBreathe 3.4s ease-in-out infinite;
+}
+.fab:hover{transform:scale(1.06);animation-play-state:paused;}
+@keyframes fabBreathe{
+  0%,100%{box-shadow:0 8px 22px rgba(240,101,30,.45);}
+  50%{box-shadow:0 8px 26px rgba(240,101,30,.65),0 0 0 6px rgba(240,101,30,.10);}
+}
+.fab:active{transform:scale(.92);}
+
+/* ---------------------------- صفحه گفتگو ---------------------------- */
+#view-chat{display:flex;flex-direction:column;position:absolute;inset:0;}
+.chat-header{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  box-shadow:0 1px 0 rgba(46,46,46,.06);flex-shrink:0;
+}
+.chat-header-avatar{
+  width:40px;height:40px;border-radius:50%;background:var(--orange);color:#fff;font-weight:700;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.chat-header-avatar img{width:100%;height:100%;object-fit:cover;}
+.chat-header-profile-area{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;border-radius:var(--radius-sm);padding:4px 6px;transition:background var(--dur);}
+.chat-header-profile-area:hover{background:rgba(46,46,46,.05);}
+.chat-header-info{display:flex;flex-direction:column;flex:1;min-width:0;}
+.chat-header-info strong{font-size:.92rem;}
+.chat-header-status{font-size:.7rem;color:var(--text-low);}
+.chat-header-status.on{color:#2ecc71;}
+.chat-header-status.typing{color:var(--orange);display:inline-flex;align-items:center;gap:4px;animation:fadeIn .2s var(--ease);}
+.typing-dots{display:inline-flex;gap:2px;}
+.typing-dots i{width:3.5px;height:3.5px;border-radius:50%;background:var(--orange);display:inline-block;animation:typingDot 1.1s ease-in-out infinite;}
+.typing-dots i:nth-child(2){animation-delay:.15s;}
+.typing-dots i:nth-child(3){animation-delay:.3s;}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.5;}30%{transform:translateY(-3px);opacity:1;}}
+.chat-header-actions{display:flex;gap:2px;}
+
+.contact-title-bar{display:flex;align-items:center;gap:10px;}
+.contact-action-row{display:flex;justify-content:center;gap:10px;margin-top:6px;position:relative;flex-wrap:wrap;}
+.contact-action{
+  display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.7rem;color:var(--text-mid);
+  background:var(--cream);border-radius:var(--radius-md);padding:12px 14px;min-width:68px;
+  transition:transform var(--dur) var(--ease), background var(--dur);
+  position:relative;overflow:hidden;
+}
+.contact-action span{font-size:1.15rem;}
+.contact-action:hover{background:rgba(240,101,30,.10);transform:translateY(-2px);}
+.contact-action:active{transform:scale(.94);}
+
+.messages-area{
+  flex:1;overflow-y:auto;padding:18px 14px 12px;
+  background:
+    radial-gradient(rgba(240,101,30,.055) 1px, transparent 1px),
+    linear-gradient(180deg,#ffffff, var(--cream) 45%, #ffffff);
+  background-size:28px 28px, 100% 100%;
+  background-position:0 0, 0 0;
+}
+html[data-theme="dark"] .messages-area{
+  background:
+    radial-gradient(rgba(240,101,30,.045) 1px, transparent 1px),
+    linear-gradient(180deg,#1c1c1c, #262626 45%, #1c1c1c);
+  background-size:28px 28px, 100% 100%;
+}
+.day-divider{text-align:center;margin:14px 0;}
+.day-divider span{
+  background:rgba(46,46,46,.06);color:var(--text-mid);font-size:.7rem;padding:4px 12px;border-radius:100px;
+}
+.bubble-row{display:flex;margin-bottom:10px;}
+.bubble-row.is-new{animation:bubbleIn .32s var(--ease) both;}
+.bubble-row.mine.is-new{animation:bubbleSquish .34s var(--ease) both;}
+@keyframes bubbleIn{from{opacity:0;transform:translateY(10px) scale(.94);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes bubbleSquish{
+  0%{opacity:0;transform:translateY(6px) scale(.9);}
+  55%{opacity:1;transform:translateY(0) scale(1.04);}
+  100%{transform:scale(1);}
+}
+.bubble-row.mine{justify-content:flex-start;} /* در RTL یعنی سمت راست — پیام‌های خودم */
+.bubble-row.theirs{justify-content:flex-end;} /* در RTL یعنی سمت چپ — پیام‌های طرف مقابل */
+/* گروه‌بندی پیام‌های پیاپی (مثل واتساپ/تلگرام): پیام‌های پشت‌سرهم یک نفر به‌جای
+   این‌که هرکدام جعبه‌ی کاملاً مجزا با فاصله‌ی یکسان باشند، به‌هم می‌چسبند —
+   این دقیقاً چیزی‌ست که به گفتگو حس جریان/باز بودن می‌دهد و از تکه‌تکه و
+   بسته به‌نظر رسیدن (هر پیام مثل یک اتاقک جدا) جلوگیری می‌کند. */
+.bubble-row.grouped-first,.bubble-row.grouped-middle{margin-bottom:2px;}
+.bubble.mine.grouped-first{border-bottom-right-radius:6px;}
+.bubble.mine.grouped-middle{border-top-right-radius:6px;border-bottom-right-radius:6px;}
+.bubble.mine.grouped-last{border-top-right-radius:6px;}
+.bubble.theirs.grouped-first{border-bottom-left-radius:6px;}
+.bubble.theirs.grouped-middle{border-top-left-radius:6px;border-bottom-left-radius:6px;}
+.bubble.theirs.grouped-last{border-top-left-radius:6px;}
+.bubble{
+  max-width:80%;padding:11px 15px 9px;border-radius:16px;position:relative;
+  box-shadow:0 2px 6px rgba(46,46,46,.06);
+}
+.bubble.mine{background:var(--orange);color:#fff;border-bottom-right-radius:6px;}
+.bubble.theirs{background:#fff;color:var(--text-hi);border-bottom-left-radius:6px;}
+.bubble-text{font-size:.92rem;line-height:1.62;white-space:pre-wrap;word-break:break-word;}
+.bubble-time{font-size:.62rem;opacity:.7;display:flex;align-items:center;gap:3px;justify-content:flex-end;margin-top:3px;}
+.bubble-tick{display:inline-flex;line-height:0;color:rgba(255,255,255,.75);}
+.bubble-tick.read{color:#7fdbff;}
+.bubble.theirs .bubble-tick{color:var(--text-low);}
+.bubble-image{max-width:240px;border-radius:12px;display:block;margin-top:2px;cursor:zoom-in;transition:filter .15s var(--ease);}
+.bubble-image:active{filter:brightness(.9);}
+.bubble-reactions{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+.reaction-chip{background:rgba(255,255,255,.25);border-radius:100px;padding:1px 7px;font-size:.72rem;}
+.bubble.theirs .reaction-chip{background:rgba(46,46,46,.07);}
+
+.bubble-voice{display:flex;align-items:center;gap:8px;min-width:170px;}
+.voice-play-btn{font-size:1.1rem;}
+.voice-wave{display:flex;align-items:flex-end;gap:2px;height:26px;flex:1;}
+.voice-wave span{width:3px;background:var(--orange);opacity:.85;border-radius:2px;min-height:3px;}
+.bubble.mine .voice-wave span{background:rgba(255,255,255,.85);}
+.voice-duration{font-size:.68rem;opacity:.8;}
+
+/* ---------------------------- پاپ‌آور ری‌اکشن ---------------------------- */
+.reaction-picker{
+  position:fixed;z-index:300;background:#fff;border-radius:100px;box-shadow:0 8px 24px rgba(0,0,0,.18);
+  padding:6px 10px;display:flex;gap:6px;opacity:0;transform:translateY(6px) scale(.9);
+  transition:all .18s var(--ease);
+}
+.reaction-picker.show{opacity:1;transform:translateY(0) scale(1);}
+.reaction-picker button{font-size:1.3rem;transition:transform .15s var(--ease);}
+.reaction-picker button:hover{transform:scale(1.3) translateY(-3px);}
+
+/* ---------------------------- نوار ارسال پیام ---------------------------- */
+.composer{
+  display:flex;align-items:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  box-shadow:0 -1px 0 rgba(46,46,46,.06);flex-shrink:0;
+}
+.composer input[type="text"]{
+  flex:1;border:none;background:var(--cream);border-radius:100px;padding:11px 16px;
+  font-size:.86rem;color:var(--text-hi);
+}
+.composer input[type="text"]:focus{outline:2px solid var(--orange);outline-offset:-2px;}
+.send-btn{background:var(--orange);color:#fff;border-radius:50%;transform:rotate(180deg);}
+
+.voice-record-bar{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card-bg);flex-shrink:0;
+  animation:fadeIn .2s var(--ease);
+}
+.rec-dot{width:9px;height:9px;border-radius:50%;background:#d9364a;display:inline-block;margin-inline-end:6px;animation:bootPulse 1s infinite;}
+.voice-record-wave{flex:1;font-size:.82rem;color:var(--text-mid);}
+
+/* ---------------------------- ناوبری پایین ---------------------------- */
+.bottom-nav{
+  display:flex;box-shadow:0 -2px 10px rgba(46,46,46,.06);
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:15;
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;
+  color:var(--text-low);font-size:.66rem;border-radius:var(--radius-sm);transition:all var(--dur) var(--ease);
+  position:relative;overflow:hidden;
+}
+.nav-icon{font-size:1.2rem;transition:transform var(--dur) var(--ease);}
+.nav-btn.active{color:var(--orange);}
+.nav-btn.active .nav-icon{transform:translateY(-2px) scale(1.08);}
+
+/* ---------------------------- کارت هویت ---------------------------- */
+.idcard{
+  margin:16px;background:var(--card-bg);border-radius:var(--radius-lg);padding:28px 22px;
+  text-align:center;box-shadow:var(--card-shadow);position:relative;overflow:hidden;
+  animation:cardIn .4s var(--ease);
+}
+.idcard-glow{
+  position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:220px;height:220px;
+  background:radial-gradient(circle, rgba(240,101,30,.18), transparent 70%);
+}
+.idcard-photo{
+  width:88px;height:88px;border-radius:50%;background:var(--orange);color:#fff;font-size:2rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;overflow:hidden;position:relative;
+}
+.idcard-photo img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;transition:transform .2s var(--ease);}
+.idcard-photo img:active{transform:scale(.94);}
+.idcard-name{font-size:1.15rem;margin-bottom:2px;position:relative;}
+.idcard-username{color:var(--orange);font-weight:600;font-size:.85rem;position:relative;}
+.idcard-bio{color:var(--text-mid);font-size:.82rem;margin:8px 0;position:relative;}
+.idcard-status{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.75rem;color:var(--text-mid);margin:10px 0 16px;position:relative;}
+.verified-badge{
+  display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+  border-radius:50%;background:#3897f0;color:#fff;font-size:.62rem;font-style:normal;
+  vertical-align:middle;margin-inline-start:2px;
+}
+.idcard-info-rows{position:relative;background:var(--cream);border-radius:var(--radius-md);margin-bottom:16px;overflow:hidden;text-align:right;}
+.idcard-info-rows .info-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;font-size:.82rem;border-bottom:1px solid rgba(46,46,46,.06);}
+.idcard-info-rows .info-row:last-child{border-bottom:none;}
+.idcard-info-rows .info-label{color:var(--text-mid);}
+.idcard-info-rows .info-value{color:var(--text-hi);font-weight:600;direction:ltr;}
+.idcard-status .dot{width:7px;height:7px;border-radius:50%;background:var(--text-low);position:relative;}
+.idcard-status.on .dot{background:#2ecc71;}
+.idcard-status.on .dot::after{
+  content:"";position:absolute;inset:0;border-radius:50%;background:#2ecc71;
+  animation:onlinePulse 2.6s var(--ease) infinite;
+}
+.idcard-qr{display:flex;justify-content:center;margin-bottom:18px;position:relative;}
+.idcard-qr img,.idcard-qr canvas{border-radius:12px;padding:8px;background:#fff;}
+
+/* ---------------------------- تنظیمات ---------------------------- */
+.settings-list{padding:8px 16px 40px;display:flex;flex-direction:column;gap:14px;}
+.settings-avatar-row{display:flex;justify-content:center;padding:6px 0 4px;}
+.settings-avatar-wrap{position:relative;width:92px;height:92px;}
+.settings-avatar{
+  width:92px;height:92px;border-radius:50%;background:var(--orange);color:#fff;font-size:2.1rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 6px 18px rgba(240,101,30,.35);
+}
+.settings-avatar img{width:100%;height:100%;object-fit:cover;}
+.settings-avatar-edit{
+  position:absolute;bottom:0;left:0;width:32px;height:32px;border-radius:50%;
+  background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;
+  border:3px solid var(--cream);box-shadow:0 2px 8px rgba(0,0,0,.2);transition:transform var(--dur);
+}
+.settings-avatar-edit:active{transform:scale(.9);}
+.settings-item{display:flex;flex-direction:column;gap:6px;}
+.settings-item label{font-size:.78rem;color:var(--text-mid);}
+.settings-item input{
+  padding:11px 14px;border-radius:var(--radius-md);border:1.5px solid rgba(46,46,46,.10);
+  background:var(--card-bg);color:var(--text-hi);font-size:.86rem;
+}
+.settings-divider{height:1px;background:rgba(46,46,46,.08);margin:4px 0;}
+.toggle-item{flex-direction:row;align-items:center;justify-content:space-between;}
+.toggle-switch{
+  width:46px;height:26px;border-radius:100px;background:rgba(46,46,46,.15);position:relative;
+  transition:background var(--dur) var(--ease);
+}
+.toggle-switch[aria-pressed="true"]{background:var(--orange);}
+.toggle-switch .knob{
+  position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;
+  transition:transform var(--dur) var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.25);
+}
+.toggle-switch[aria-pressed="true"] .knob{transform:translateX(-20px);}
+
+/* ---------------------------- ادمین ---------------------------- */
+.admin-stats{display:flex;gap:10px;padding:0 16px 14px;}
+.admin-stat{
+  flex:1;background:var(--card-bg);border-radius:var(--radius-md);box-shadow:var(--card-shadow);
+  padding:14px;text-align:center;
+}
+.admin-stat .num{display:block;font-size:1.4rem;font-weight:800;color:var(--orange);}
+.admin-stat .lbl{font-size:.7rem;color:var(--text-mid);}
+.admin-section-title{padding:6px 16px;font-size:.9rem;}
+.admin-table-wrap{margin:0 16px 18px;background:var(--card-bg);border-radius:var(--radius-md);box-shadow:var(--card-shadow);overflow:auto;}
+.admin-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.admin-table th,.admin-table td{padding:9px 10px;text-align:center;border-bottom:1px solid rgba(46,46,46,.06);}
+.badge-on{color:#2ecc71;}
+.badge-off{color:var(--text-low);}
+.admin-denied,.admin-empty{padding:24px;text-align:center;color:var(--text-mid);}
+
+/* ---------------------------- مودال ---------------------------- */
+.modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);opacity:0;visibility:hidden;transition:all var(--dur) var(--ease);padding:20px;}
+.modal.open{opacity:1;visibility:visible;}
+.modal-box{width:min(400px,100%);border-radius:var(--radius-lg);padding:20px;transform:scale(.94);transition:transform var(--dur) var(--ease);}
+.modal.open .modal-box{transform:scale(1);}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+
+/* گزینه‌های «گفتگوی جدید» به‌جای مودال وسط صفحه، مثل شیت‌های iOS/Telegram از پایین می‌آید */
+.modal.sheet{align-items:flex-end;padding:0;}
+.modal.sheet .modal-box{
+  width:100%;max-width:none;border-radius:22px 22px 0 0;
+  padding:10px 14px calc(20px + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform var(--dur) var(--ease);
+}
+.modal.sheet.open .modal-box{transform:translateY(0);}
+.modal.sheet .modal-box::before{
+  content:"";display:block;width:36px;height:4px;border-radius:2px;
+  background:var(--text-low);margin:2px auto 12px;
+}
+
+/* شیشه مایع (Liquid Glass): یک لایه نور مورب که فقط یک‌بار موقع باز شدن کارت/مودال
+   می‌گذرد — عمداً پیوسته/بی‌نهایت نیست تا روی نوارهای همیشه‌دیده (بالا/پایین) مزاحم نشود */
+.liquid-sheen{position:relative;overflow:hidden;}
+.liquid-sheen::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 48%, transparent 62%);
+  transform:translateX(-120%);
+  animation:liquidSheen 1.4s var(--ease) .15s both;
+}
+html[data-theme="dark"] .liquid-sheen::after{
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.10) 48%, transparent 62%);
+}
+@keyframes liquidSheen{to{transform:translateX(120%);}}
+
+/* ---------------------------- Ripple (موج لمسی روی دکمه‌ها) ---------------------------- */
+.rippling{position:relative;overflow:hidden;}
+.ripple-ink{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:currentColor;opacity:.25;transform:scale(0);
+  animation:rippleGrow .55s var(--ease) forwards;
+}
+@keyframes rippleGrow{to{transform:scale(2.6);opacity:0;}}
+#newChatUsernameInput{width:100%;padding:12px 14px;border-radius:var(--radius-md);border:1.5px solid rgba(46,46,46,.1);background:var(--cream);color:var(--text-hi);font-size:.88rem;}
+.found-user-card{display:flex;align-items:center;gap:10px;margin-top:14px;background:var(--cream);padding:10px;border-radius:var(--radius-md);}
+.found-user-card div{flex:1;font-size:.85rem;}
+
+/* ---------------------------- پیش‌نمایش تمام‌صفحه عکس (Lightbox) ---------------------------- */
+.lightbox{
+  position:fixed;inset:0;z-index:500;background:rgba(10,10,10,.94);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  opacity:0;visibility:hidden;transition:opacity .3s var(--ease), visibility .3s var(--ease);
+}
+.lightbox.open{opacity:1;visibility:visible;}
+.lightbox img{
+  max-width:92vw;max-height:88vh;border-radius:10px;
+  transform:scale(.86);transition:transform .32s var(--ease);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.lightbox.open img{transform:scale(1);}
+.lightbox-close{
+  position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;
+  background:rgba(255,255,255,.12);color:#fff;
+}
+.lightbox-close:hover{background:rgba(255,255,255,.22);}
+
+/* ---------------------------- Toast ---------------------------- */
+.toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--dark-gray);color:var(--cream);padding:10px 20px;border-radius:100px;font-size:.82rem;
+  opacity:0;transition:all .3s var(--ease);z-index:400;
+  display:flex;align-items:center;gap:7px;max-width:88vw;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast-ic{flex-shrink:0;}
+.toast-success .toast-ic{color:#5fd08a;}
+.toast-error{background:#3a1f1c;}
+.toast-error .toast-ic{color:#f0836b;}
+
+/* ---------------------------- واکنش‌گرا ---------------------------- */
+@media (min-width:640px){
+  .app-shell{max-width:480px;margin:0 auto;box-shadow:0 0 40px rgba(0,0,0,.08);}
+  body{overflow:auto;background:var(--dark-gray);}
+}
+:focus-visible{outline:2px solid var(--orange);outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+}
+
+/* ---------------------------- گروه و کانال (اضافه‌شده) ---------------------------- */
+.modal-box input[type="text"]{
+  width:100%;padding:12px 14px;border-radius:var(--radius-md);border:1.5px solid rgba(46,46,46,.1);
+  background:var(--cream);color:var(--text-hi);font-size:.88rem;
+}
+[data-theme="dark"] .modal-box input[type="text"]{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--text-hi);}
+
+.option-row{
+  display:flex;align-items:center;gap:12px;width:100%;padding:13px 6px;font-size:.92rem;
+  border-bottom:1px solid rgba(46,46,46,.08);text-align:right;
+  position:relative;overflow:hidden;
+}
+.option-row:last-child{border-bottom:none;}
+.option-row span{font-size:1.2rem;}
+.option-row:active{background:rgba(240,101,30,.06);}
+
+.member-picker-list{max-height:260px;overflow-y:auto;margin-top:10px;}
+.member-pick-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid rgba(46,46,46,.06);font-size:.85rem;cursor:pointer;}
+.member-pick-row small{color:var(--text-mid);}
+.chat-avatar.small{width:34px;height:34px;font-size:.85rem;}
+
+.group-members-list{padding:0 16px;}
+.member-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(46,46,46,.07);font-size:.85rem;}
+.member-row small{color:var(--text-mid);}
+.member-actions{margin-inline-start:auto;display:flex;gap:6px;}
+.mini-btn{font-size:.7rem;padding:5px 10px;border-radius:100px;background:rgba(46,46,46,.08);color:var(--text-hi);}
+.mini-btn.danger{background:rgba(217,54,74,.12);color:#d9364a;}
+
+.bubble-sender{font-size:.72rem;font-weight:700;color:var(--orange);margin-bottom:2px;}
+.channel-view-only-bar{padding:12px;text-align:center;font-size:.8rem;color:var(--text-mid);background:var(--card-bg);}
+.empty-hint{padding:20px;text-align:center;color:var(--text-mid);font-size:.85rem;}
+.settings-divider{height:1px;background:rgba(46,46,46,.08);margin:14px 0;}
+[data-theme="dark"] .settings-divider,[data-theme="dark"] .option-row,[data-theme="dark"] .member-pick-row,[data-theme="dark"] .member-row{border-color:rgba(255,255,255,.08);}
+
+/* ---------- ریپلای / استیکر (اضافه‌شده) ---------- */
+.reply-preview-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 12px;background:var(--cream);border-right:3px solid var(--orange);
+  margin:0 10px;border-radius:8px 8px 0 0;
+}
+.reply-preview-text{font-size:.8rem;color:var(--text-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.sticker-picker{
+  display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--card-bg);
+  max-height:160px;overflow-y:auto;
+}
+.sticker-picker button{
+  font-size:1.7rem;background:none;border:none;padding:6px;border-radius:8px;cursor:pointer;
+}
+.sticker-picker button:active{background:var(--cream);}
+.bubble-sticker{font-size:3rem;line-height:1;padding:2px 0;}
+.bubble-reply-quote{
+  border-right:3px solid var(--orange);padding:4px 8px;margin-bottom:4px;
+  font-size:.76rem;opacity:.75;border-radius:4px;background:rgba(0,0,0,.04);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+[data-theme="dark"] .bubble-reply-quote{background:rgba(255,255,255,.08);}
+
+/* ---------- پین/قوانین/دعوت (اضافه‌شده) ---------- */
+.pinned-bar{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream);
+  border-bottom:1px solid rgba(46,46,46,.08);font-size:.8rem;
+}
+.pinned-bar-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.invite-code-box{
+  display:flex;align-items:center;gap:8px;background:var(--cream);border-radius:8px;
+  padding:8px 12px;font-family:monospace;font-size:.9rem;margin-top:6px;
+}
+[data-theme="dark"] .pinned-bar{background:rgba(255,255,255,.06);}
+[data-theme="dark"] .invite-code-box{background:rgba(255,255,255,.06);}
+
+/* =========================================================================
+   مرکز امنیت حساب + صفحه قفل برنامه (اضافه‌شده)
+   ========================================================================= */
+
+.settings-subhead{font-size:.82rem;font-weight:700;color:var(--text-mid);margin:4px 0 8px;}
+.settings-hint{font-size:.74rem;color:var(--text-low);line-height:1.5;margin:4px 0;}
+.badge-warn{
+  display:inline-block;font-size:.66rem;padding:1px 6px;border-radius:20px;
+  background:rgba(240,101,30,.14);color:var(--orange-dark);font-weight:700;vertical-align:middle;
+}
+
+.security-score-card{
+  display:flex;gap:14px;align-items:center;padding:16px;border-radius:var(--radius-lg);margin-bottom:6px;
+}
+.security-score-ring{
+  --score:0;
+  width:64px;height:64px;border-radius:50%;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;
+  background:conic-gradient(var(--orange) calc(var(--score) * 1%), rgba(46,46,46,.1) 0);
+  transition:background 400ms var(--ease);
+}
+.security-score-ring::before{
+  content:"";position:absolute;
+}
+.security-score-ring span{
+  background:var(--card-bg);width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+.security-score-title{font-weight:700;font-size:.9rem;margin-bottom:4px;}
+.security-tips{margin:0;padding-inline-start:18px;font-size:.78rem;color:var(--text-mid);line-height:1.7;}
+
+.security-list{display:flex;flex-direction:column;gap:8px;}
+.security-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;border-radius:var(--radius-md);background:var(--card-bg);box-shadow:var(--card-shadow);
+  font-size:.82rem;
+}
+.security-row small{color:var(--text-low);}
+.security-panel{
+  margin-top:8px;padding:12px;border-radius:var(--radius-md);background:var(--cream);
+}
+.recovery-code-display{
+  font-family:monospace;font-size:1.05rem;letter-spacing:1px;text-align:center;
+  padding:14px;border-radius:var(--radius-md);background:var(--cream);margin-top:8px;user-select:all;
+}
+.btn-outline.danger{color:#c0392b;border-color:rgba(192,57,43,.4);}
+.btn-outline.small{padding:8px 12px;font-size:.8rem;}
+
+/* ---------- صفحه قفل برنامه ---------- */
+.lock-screen{
+  position:fixed;inset:0;z-index:500;background:var(--cream);
+  display:flex;align-items:center;justify-content:center;
+  animation:lockFadeIn 260ms var(--ease);
+}
+@keyframes lockFadeIn{from{opacity:0;}to{opacity:1;}}
+.lock-screen-inner{text-align:center;width:min(320px,90vw);}
+.lock-logo{font-size:2.6rem;margin-bottom:6px;filter:drop-shadow(0 2px 10px rgba(240,101,30,.35));}
+.lock-screen h2{margin:0 0 18px;font-size:1.15rem;color:var(--text-hi);}
+.lock-pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:18px;}
+.lock-pin-dots span{
+  width:14px;height:14px;border-radius:50%;border:2px solid var(--orange);background:transparent;
+  transition:background 160ms var(--ease),transform 160ms var(--ease);
+}
+.lock-pin-dots span.filled{background:var(--orange);transform:scale(1.1);}
+.lock-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.lock-keypad button{
+  padding:16px 0;border:none;border-radius:var(--radius-md);background:var(--card-bg);
+  box-shadow:var(--card-shadow);font-size:1.15rem;font-weight:600;color:var(--text-hi);
+  transition:transform 120ms var(--ease),background 120ms var(--ease);
+}
+.lock-keypad button:active{transform:scale(.92);background:rgba(240,101,30,.12);}
+
+/* ---------- حالت ضد اسکرین‌شات: محو کل صفحه وقتی اپ در پس‌زمینه است (best-effort) ---------- */
+.screenshot-shield-active #appShell{filter:blur(24px);transition:filter 120ms var(--ease);}
+
+/* ---------- هشدار لینک مشکوک (ضدفیشینگ) داخل حباب پیام ---------- */
+.link-risk-banner{
+  display:flex;align-items:flex-start;gap:8px;margin-top:6px;padding:8px 10px;
+  border-radius:var(--radius-sm);background:rgba(192,57,43,.1);color:#c0392b;font-size:.72rem;line-height:1.6;
+}
+.link-risk-banner b{display:block;font-size:.76rem;margin-bottom:2px;}
+.link-risk-open-anyway{
+  display:inline-block;margin-top:4px;font-size:.72rem;text-decoration:underline;cursor:pointer;color:#c0392b;
+}
+
+.risky-link{
+  color:#c0392b;text-decoration:underline wavy;cursor:pointer;font-weight:600;
+}
+.bubble-text a{color:inherit;text-decoration:underline;word-break:break-all;}
+
+/* ---------- صفحه‌ی «این گروه مسدود شده» ---------- */
+.group-blocked-screen{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:60px 24px;gap:10px;
+}
+.group-blocked-icon{font-size:3rem;margin-bottom:6px;filter:grayscale(1) opacity(.8);}
+.group-blocked-screen h2{margin:0;color:var(--text-hi);font-size:1.15rem;}
+.group-blocked-screen p{margin:0;color:var(--text-mid);font-size:.85rem;max-width:320px;line-height:1.7;}
+
+/* ---------- بخش گروه‌ها در پنل ادمین ---------- */
+.admin-table .group-blocked-row{opacity:.6;}
+.verify-req-message{max-width:220px;white-space:normal;text-align:right;line-height:1.5;}
+.btn-outline.tiny{padding:5px 10px;font-size:.72rem;}
+
+/* ---------- گفتگوی مخفی (اضافه‌شده) — فضای بصری کاملاً جدا ---------- */
+.secret-space{
+  background:#12100e;color:#e8e2d8;
+}
+.secret-space .view-title-bar h2, .secret-space .chat-header{color:#e8e2d8;}
+.secret-hint{
+  padding:10px 16px;font-size:.78rem;opacity:.7;line-height:1.6;
+}
+.secret-expiry-hint{font-size:.72rem;opacity:.75;}
+.secret-card{
+  background:#1c1916;border-radius:12px;margin:0 10px 8px;
+}
+.secret-messages-area{background:#12100e;}
+.secret-space .bubble.mine{background:#3a2a12;color:#f3e9d8;}
+.secret-space .bubble.theirs{background:#221f1b;color:#e8e2d8;}
+.secret-broken{opacity:.6;font-style:italic;}
+.secret-space .composer{background:rgba(28,25,22,.75);}
+.secret-space .composer input[type="text"]{background:#12100e;color:#e8e2d8;}
+
+/* ---------- صفحه‌ی تماس (اضافه‌شده) ---------- */
+.call-overlay{
+  position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;padding:60px 20px 40px;color:#fff;overflow:hidden;
+}
+.call-bg{
+  position:absolute;inset:0;background:linear-gradient(160deg,#2b1608,#0e0e0e 65%);z-index:-1;
+}
+.call-remote-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;}
+.call-info{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:40px;}
+.call-avatar{
+  width:110px;height:110px;border-radius:50%;background:var(--orange);display:flex;
+  align-items:center;justify-content:center;font-size:2.4rem;font-weight:bold;color:#fff;
+  overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.4);
+}
+.call-avatar img{width:100%;height:100%;object-fit:cover;}
+.call-name{font-size:1.3rem;margin:0;}
+.call-status{opacity:.75;font-size:.9rem;margin:0;}
+.call-local-video{
+  position:absolute;bottom:120px;left:16px;width:100px;height:140px;border-radius:16px;
+  object-fit:cover;box-shadow:0 4px 20px rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.2);
+}
+.call-actions{display:flex;gap:28px;align-items:center;}
+.call-btn{
+  width:62px;height:62px;border-radius:50%;border:none;background:rgba(255,255,255,.15);
+  color:#fff;font-size:1.5rem;display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.call-btn.danger{background:#e0432b;}
+.call-btn.accept{background:#2fbf4f;}
+.call-btn.active{background:var(--orange);}
+
+html[data-font-scale="small"]{font-size:14px}html[data-font-scale="normal"]{font-size:16px}html[data-font-scale="large"]{font-size:18px}html[data-font-scale="xlarge"]{font-size:20px}html[data-contrast="high"]{filter:contrast(1.08)}html[data-power="saving"] .hvU-card{transition:none!important}
+
+/* HOVIYAT APP-ONLY FLOATING CONTROL GUARD */
+#appShell[hidden] .fab,#appShell[hidden] .bottom-nav,#appShell[hidden] .topbar{display:none!important;pointer-events:none!important;}

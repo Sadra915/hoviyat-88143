@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پنل ادمین | هویت</title>
+<link rel="icon" href="./assets/icons/favicon-64.png" type="image/png">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://esm.sh;
+  style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  font-src 'self' https://cdn.jsdelivr.net data:;
+  img-src 'self' https: data:;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+  object-src 'none';
+  base-uri 'self';
+">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css">
+<link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="./css/admin-v2.css">
+<style>
+  /* این صفحه عمداً از پوسته اصلی اپ جدا است — فقط استایل‌های پایه را از style.css قرض می‌گیرد */
+  body{overflow:auto;min-height:100vh;background:var(--cream);}
+  .admin-page{max-width:720px;margin:0 auto;padding:24px 16px 60px;}
+  .admin-page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .admin-page-header h1{color:var(--orange);font-size:1.3rem;}
+  .admin-login-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+  .admin-announce-box{
+    background:var(--card-bg);border-radius:var(--radius-md);box-shadow:var(--card-shadow);
+    padding:14px 16px;margin-bottom:18px;
+  }
+  .admin-announce-box label{display:block;font-size:.78rem;color:var(--text-mid);margin-bottom:8px;}
+  .admin-announce-box textarea{
+    width:100%;border-radius:var(--radius-sm);border:1.5px solid rgba(46,46,46,.12);
+    padding:10px 12px;font-family:inherit;font-size:.85rem;resize:vertical;background:var(--cream);color:var(--text-hi);
+  }
+  .admin-announce-actions{display:flex;gap:8px;margin-top:10px;}
+  .admin-announce-status{font-size:.74rem;color:var(--text-mid);margin-top:8px;}
+  .admin-title-with-icon{display:flex;align-items:center;gap:8px;}
+  .admin-login-wrap .admin-title-with-icon{justify-content:center;}
+</style>
+</head>
+<body>
+
+<div id="globalErrorBanner" class="global-error-banner" hidden>
+  <span><svg class="ic " width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> مشکلی در بارگذاری پیش آمد. صفحه را رفرش کنید:</span>
+  <code id="globalErrorText"></code>
+</div>
+<script src="./js/error-handler.js"></script>
+
+<!-- ===================== ورود ادمین ===================== -->
+<div id="adminLoginWrap" class="admin-login-wrap">
+  <div class="auth-card liquid-sheen">
+    <h1 class="auth-logo admin-title-with-icon"><svg class="ic " width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg> پنل ادمین</h1>
+    <p class="auth-tagline">این صفحه جدا از اپلیکیشن اصلی است و فقط برای مدیر سامانه است.</p>
+    <form id="adminLoginForm" class="auth-form">
+      <input type="email" id="adminEmail" placeholder="ایمیل ادمین" required autocomplete="email">
+      <input type="password" id="adminPassword" placeholder="رمز عبور" required autocomplete="current-password">
+      <p class="auth-error" id="adminLoginError"></p>
+      <button type="submit" class="btn-primary full">ورود</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== دسترسی رد شد ===================== -->
+<div id="adminDenied" class="admin-login-wrap" hidden>
+  <div class="auth-card liquid-sheen">
+    <h1 class="auth-logo admin-title-with-icon"><svg class="ic " width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></h1>
+    <p class="auth-tagline">این حساب دسترسی ادمین ندارد.</p>
+    <button id="adminDeniedLogout" class="btn-outline full">خروج و ورود با حساب دیگر</button>
+  </div>
+</div>
+
+<!-- ===================== داشبورد ادمین ===================== -->
+<div id="adminPage" class="admin-page" hidden>
+  <div class="admin-page-header">
+    <h1 class="admin-title-with-icon"><svg class="ic " width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg> پنل ادمین هویت</h1>
+    <button id="adminLogoutBtn" class="btn-outline small">خروج</button>
+  </div>
+
+  <div class="admin-announce-box">
+    <label class="admin-title-with-icon"><svg class="ic " width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> اعلان به همه کاربران (در باز کردن بعدی اپ نمایش داده می‌شود)</label>
+    <textarea id="announceText" rows="2" placeholder="مثلاً: امشب ساعت ۱۰ تا ۱۱ برای آپدیت سرویس قطع خواهد بود."></textarea>
+    <div class="admin-announce-actions">
+      <button id="announceSendBtn" class="btn-primary small">ارسال اعلان</button>
+      <button id="announceClearBtn" class="btn-outline small">حذف اعلان فعلی</button>
+    </div>
+    <p id="announceStatus" class="admin-announce-status"></p>
+  </div>
+
+  <div id="adminHolder"></div>
+</div>
+
+<script type="module" src="./js/admin-app.js"></script>
+</body>
+</html>

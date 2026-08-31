@@ -1,0 +1,22 @@
+{
+  "name": "hoviyat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "هویت — پیام‌رسان. این package.json فقط برای ابزار بسته‌بندی Capacitor (تبدیل به اپ اندروید) است؛ خود وب‌اپ هیچ build step یا bundler ندارد و همان‌طور که هست کار می‌کند.",
+  "scripts": {
+    "build:dist": "node build-dist.mjs",
+    "app:add-android": "npm run build:dist && npx cap add android --config capacitor.config.app.json",
+    "app:sync": "npm run build:dist && npx cap sync android --config capacitor.config.app.json",
+    "app:open": "npx cap open android --config capacitor.config.app.json",
+    "admin:add-android": "npm run build:dist && npx cap add android --config capacitor.config.admin.json",
+    "admin:sync": "npm run build:dist && npx cap sync android --config capacitor.config.admin.json",
+    "admin:open": "npx cap open android --config capacitor.config.admin.json"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}

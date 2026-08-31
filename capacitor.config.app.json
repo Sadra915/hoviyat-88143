@@ -1,0 +1,8 @@
+{
+  "appId": "ir.hoviyat.app",
+  "appName": "هویت",
+  "webDir": "dist-app",
+  "server": {
+    "androidScheme": "https"
+  }
+}

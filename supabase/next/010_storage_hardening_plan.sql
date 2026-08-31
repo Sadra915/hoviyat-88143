@@ -1,0 +1,13 @@
+-- HOVIYAT NEXT 010: storage hardening gate.
+-- Do not run blindly. This file is deliberately a gated migration because
+-- media_url currently contains public URLs in the legacy schema.
+--
+-- Step A: deploy the client signed-URL resolver and migrate media_url to paths.
+-- Step B: verify old/new media rendering.
+-- Step C: make private buckets and enforce storage.objects policies.
+--
+-- Example target state (after Step A/B):
+-- update storage.buckets set public=false
+-- where id in ('chat-media','group-media','channel-media');
+--
+-- Never place a Supabase service_role key in this repository.
