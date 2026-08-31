@@ -1,7 +1,0 @@
-/* HOVIYAT ULTIMATE additive theme hooks */
-:root{--hv-blur:18px}
-.hv-secret-soft #view-secretlist,.hv-secret-soft #view-secretchat{filter:saturate(.86) brightness(.9)}
-html[data-power="saving"] .hv-gradient-atmosphere,html[data-power="saving"] .hvU-card{animation:none!important}
-html[data-power="saving"] #hvUltimateBtn{backdrop-filter:none}
-html[data-power="balanced"]{--hv-blur:12px}
-html[data-power="adaptive"]{--hv-blur:16px}
