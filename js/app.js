@@ -3,14 +3,14 @@
  * نقطه ورود و هماهنگ‌کننده اصلی هویت — گفتگوی خصوصی، گروه، کانال.
  */
 import { supabase, auth, ADMIN_UID, uniqueChannelName } from "./supabase-init.js";
-import { signUp, logIn, logOut, watchAuth, validateUsername, getUserDoc, mapProfile, updateMyAvatar, checkMySuspension } from "./auth.js";
+import { signUp, logIn, logOut, watchAuth, validateUsername, getUserDoc, mapProfile, updateMyAvatar, checkMySuspension, signInWithGoogle } from "./auth.js";
 import {
   findUserByUsername, getMyContacts, openOrCreateChat, watchMyChats, watchMessages, watchChatMeta,
-  sendTextMessage, sendImageMessage, sendVoiceMessage, toggleReaction, markChatRead, deleteChat,
+  sendTextMessage, sendImageMessage, sendVideoMessage, sendVoiceMessage, toggleReaction, markChatRead, deleteChat,
   sendStickerMessage, deleteMessage, reportMessage, blockUser, unblockUser, isUserBlocked,
 } from "./chat.js";
 import {
-  createGroup, watchMyGroups, watchGroupMessages, sendGroupText, sendGroupImage,
+  createGroup, watchMyGroups, watchGroupMessages, sendGroupText, sendGroupImage, sendGroupVideo,
   sendGroupVoice, toggleGroupReaction, markGroupRead, addGroupMember, removeGroupMember,
   leaveGroup, promoteGroupAdmin, isGroupAdmin, getGroup, updateGroupInfo, deleteGroup,
   updateGroupPermissions, updateGroupPhoto, sendGroupSticker, deleteGroupMessage, reportGroupMessage,
@@ -19,12 +19,12 @@ import {
 } from "./groups.js";
 import {
   createChannel, watchMyChannels, searchPublicChannels, watchChannelPosts,
-  postChannelText, postChannelImage, subscribeChannel, unsubscribeChannel,
+  postChannelText, postChannelImage, postChannelVideo, subscribeChannel, unsubscribeChannel,
   promoteChannelAdmin, isChannelAdmin, getChannel, updateChannelInfo, deleteChannel,
   updateChannelPhoto, reportChannelPost,
 } from "./channels.js";
 import {
-  renderChatList, renderChatHeader, renderMessages, showReactionPicker, escapeHtml,
+  renderChatList, renderChatHeader, renderMessages, showReactionPicker, closeReactionPickers, escapeHtml,
   renderContactProfile, renderMemberPicker, renderGroupInfo, renderChannelInfo,
   renderChannelSearchResults, renderStickerPicker, renderSecretChatList, renderSecretMessages,
   fmtCountdown as secretCountdownText,
@@ -33,15 +33,24 @@ import { renderIdentityCard, stopIdentityCard, toast } from "./identity.js";
 import { renderSmartSpace } from "./smartspace.js";
 import { createVoiceRecorder } from "./voice.js";
 import { icon } from "./icons.js";
+import { observePrivateMedia } from "./media-storage.js";
 import { watchTyping } from "./typing.js";
 import * as security from "./security.js";
 import {
-  ensureMyPublicKeyPublished, openSecretChatWith, watchMySecretChats,
+  ensureMyPublicKeyPublished, openSecretChatWith, watchMySecretChats, checkOtherKeyChange,
   watchSecretMessages, sendSecretText, deleteSecretChat, runExpiredCleanup,
 } from "./secretchat.js";
 import * as callManager from "./call.js";
+import { initStories, loadNotifications, cleanupStories } from "./stories.js";
+import { initSavedMessages, loadSavedMessages, saveMessage } from "./saved.js";
+import { loadMyRestrictions, assertActionAllowed } from "./restrictions.js";
+import { initNativeDeepLinks } from "./native-deeplink.js";
 
 const $ = sel => document.querySelector(sel);
+initNativeDeepLinks().catch(console.error);
+window.addEventListener("hoviyat:auth-error",e=>toast(e.detail?.message||"احراز هویت ناموفق بود.","error"));
+
+const stopPrivateMediaObserver = observePrivateMedia(document.body);
 
 /* ==================== افکت Ripple سراسری روی دکمه‌ها ====================
  * به‌جای اضافه‌کردن ایونت جداگانه به تک‌تک دکمه‌ها (که در این پروژه بیشترشان
@@ -127,6 +136,7 @@ function exitToAuth() {
   if (secretCountdownTimer) { clearInterval(secretCountdownTimer); secretCountdownTimer = null; }
   if (callUiUnsub) { callUiUnsub(); callUiUnsub = null; }
   if (callManager.isInCall()) callManager.hangup();
+  cleanupStories();
   Object.values(presenceUnsubs).forEach(u => u());
   Object.keys(presenceUnsubs).forEach(k => delete presenceUnsubs[k]);
 }
@@ -174,6 +184,10 @@ async function enterApp(user) {
   unsubChannels = watchMyChannels(channels => { latestChannels = channels; renderList(); });
 
   initCallFeature(user.uid);
+  initStories().catch(err => console.warn("stories init", err));
+  loadMyRestrictions(true).catch(err => console.warn("restrictions init", err));
+  initSavedMessages();
+  loadNotifications($("#notificationsHolder")).catch(() => {});
 
   switchView("home");
 
@@ -388,6 +402,8 @@ function translateAuthError(err) {
 /* ==================== ناوبری بین صفحات ==================== */
 
 function switchView(view) {
+  try { closeReactionPickers(); } catch {}
+  try { window.HoviyatChatAI?.close?.(); } catch {}
   if (view === "chatsearch") { openNewChatOptions(); return; }
   const target = document.getElementById(`view-${view}`);
   if (!target) {
@@ -403,10 +419,25 @@ function switchView(view) {
   const navBtn = document.querySelector(`.nav-btn[data-view="${view}"]`);
   if (navBtn) navBtn.classList.add("active");
   const shell = document.getElementById("appShell");
-  if (shell) shell.dataset.chatOpen = view === "chat" ? "1" : "0";
+  if (shell) {
+    shell.dataset.chatOpen = (view === "chat" || view === "secretchat") ? "1" : "0";
+    shell.dataset.secretChatOpen = view === "secretchat" ? "1" : "0";
+  }
+  // Hard-stop any body-level overlay when entering Secret Chat.
+  if (view === "secretchat") {
+    try { window.HoviyatChatAI?.close?.(); } catch {}
+    document.documentElement.setAttribute("data-hoviyat-secret-chat", "true");
+    document.body?.setAttribute("data-hoviyat-secret-chat", "true");
+  } else {
+    document.documentElement.removeAttribute("data-hoviyat-secret-chat");
+    document.body?.removeAttribute("data-hoviyat-secret-chat");
+  }
   if (view === "identity") renderIdentityCard($("#identityHolder"));
   else stopIdentityCard();
-  if (view === "settings") loadSettingsForm();
+  if (view === "settings") { loadSettingsForm(); initSettingsDashboard(); }
+  if (view === "saved") loadSavedMessages().catch(err => toast(err.message || "پیام‌های ذخیره‌شده در دسترس نیستند."));
+  const aiPanel = $("#chatAiPanel");
+  if (aiPanel && view !== "chat") aiPanel.hidden = true;
 }
 
 document.querySelectorAll(".nav-btn").forEach(btn => {
@@ -528,6 +559,7 @@ function showChatView() {
 
 /** پاک‌سازی مشترک قبل از باز کردن هر گفتگوی جدید یا برگشت به لیست */
 function teardownConversation() {
+  try { closeReactionPickers(); } catch {}
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (currentTyping) { currentTyping.stop(); currentTyping = null; }
   if (unsubChatMeta) { unsubChatMeta(); unsubChatMeta = null; }
@@ -708,9 +740,8 @@ $("#chatHeader").addEventListener("click", e => {
     else if (currentEntity?.mode === "channel") openChannelInfoView();
     return;
   }
-  if (e.target.closest("#chatCallBtn") || e.target.closest("#chatVideoBtn")) {
-    toast("در حال تکمیل و توسعه این بخش هستیم");
-  }
+  if (e.target.closest("#chatCallBtn")) { startOutgoingCall(false); return; }
+  if (e.target.closest("#chatVideoBtn")) { startOutgoingCall(true); return; }
 });
 
 function openContactProfile() {
@@ -1173,17 +1204,23 @@ $("#imageInput").addEventListener("change", async e => {
   if (!MEDIA_UPLOADS_ENABLED) return;
   const file = e.target.files[0];
   if (!file || !currentEntity) return;
-  /* HOVIYAT NEXT: عکس قبل از ارسال وارد ویرایشگر می‌شود؛ هسته ارسال دست‌نخورده می‌ماند. */
-  if (window.HoviyatMediaEditor?.open) {
+  /* فقط عکس وارد ویرایشگر می‌شود؛ ویدیو مستقیماً وارد فشرده‌سازی می‌شود. */
+  if (file.type.startsWith("image/") && window.HoviyatMediaEditor?.open) {
     window.HoviyatMediaEditor.open(file);
     e.target.value = "";
     return;
   }
   try {
-    if (currentEntity.mode === "private") await sendImageMessage(currentEntity.id, file);
-    else if (currentEntity.mode === "group") await sendGroupImage(currentEntity.id, file);
-    else if (currentEntity.mode === "channel") await postChannelImage(currentEntity.id, file);
-    if(asSticker) toast("استیکر ساخته شد و به‌صورت رسانه ارسال شد.", "success");
+    if (file.type.startsWith("video/")) {
+      if (currentEntity.mode === "private") await sendVideoMessage(currentEntity.id, file);
+      else if (currentEntity.mode === "group") await sendGroupVideo(currentEntity.id, file);
+      else if (currentEntity.mode === "channel") await postChannelVideo(currentEntity.id, file);
+      toast("ویدیو فشرده شد و ارسال شد.", "success");
+    } else {
+      if (currentEntity.mode === "private") await sendImageMessage(currentEntity.id, file);
+      else if (currentEntity.mode === "group") await sendGroupImage(currentEntity.id, file);
+      else if (currentEntity.mode === "channel") await postChannelImage(currentEntity.id, file);
+    }
   } catch (err) { toast(friendlySendError(err), "error"); }
   e.target.value = "";
 });
@@ -1193,9 +1230,16 @@ window.addEventListener("hoviyat:edited-media", async e => {
   const asSticker=!!e.detail?.asSticker;
   if(!file || !currentEntity) return;
   try {
-    if (currentEntity.mode === "private") await sendImageMessage(currentEntity.id, file);
-    else if (currentEntity.mode === "group") await sendGroupImage(currentEntity.id, file);
-    else if (currentEntity.mode === "channel") await postChannelImage(currentEntity.id, file);
+    if (file.type.startsWith("video/")) {
+      if (currentEntity.mode === "private") await sendVideoMessage(currentEntity.id, file);
+      else if (currentEntity.mode === "group") await sendGroupVideo(currentEntity.id, file);
+      else if (currentEntity.mode === "channel") await postChannelVideo(currentEntity.id, file);
+      toast("ویدیو فشرده شد و ارسال شد.", "success");
+    } else {
+      if (currentEntity.mode === "private") await sendImageMessage(currentEntity.id, file);
+      else if (currentEntity.mode === "group") await sendGroupImage(currentEntity.id, file);
+      else if (currentEntity.mode === "channel") await postChannelImage(currentEntity.id, file);
+    }
     if(asSticker) toast("استیکر ساخته شد و به‌صورت رسانه ارسال شد.", "success");
   } catch (err) { toast(friendlySendError(err), "error"); }
 });
@@ -1282,6 +1326,13 @@ $("#messagesHolder").addEventListener("pointerdown", e => {
     const canPin = !!msg && currentEntity.mode === "group" && isGroupAdmin(currentEntity.data);
     const isPinned = canPin && currentEntity.data.pinnedMessageId === msgId;
     showReactionPicker(bubble, async action => {
+      if (action.type === "save") {
+        try {
+          const sourceType = currentEntity.mode === "private" ? "private" : currentEntity.mode === "group" ? "group" : "channel";
+          await saveMessage(sourceType, currentEntity.id, msgId);
+        } catch (err) { toast(err.message || "ذخیره پیام ناموفق بود."); }
+        return;
+      }
       if (action.type === "reaction") {
         if (currentEntity.mode === "private") await toggleReaction(currentEntity.id, msgId, action.emoji);
         else if (currentEntity.mode === "group") await toggleGroupReaction(currentEntity.id, msgId, action.emoji);
@@ -1290,7 +1341,7 @@ $("#messagesHolder").addEventListener("pointerdown", e => {
       } else if (action.type === "copy") {
         const text = msg?.type === "text" ? msg.body
           : msg?.type === "sticker" ? msg.body
-          : msg?.type === "image" ? "📷 عکس" : msg?.type === "voice" ? "🎙 پیام صوتی" : "";
+          : msg?.type === "image" ? "عکس" : msg?.type === "video" ? "ویدیو" : msg?.type === "voice" ? "پیام صوتی" : "";
         try { await navigator.clipboard.writeText(text || ""); toast("متن کپی شد", "success"); }
         catch { toast("کپی انجام نشد"); }
       } else if (action.type === "pin") {
@@ -1322,7 +1373,7 @@ $("#messagesHolder").addEventListener("pointerdown", e => {
           else if (isChannel) await supabase.from("channel_posts").delete().eq("id", msgId).eq("channel_id", currentEntity.id);
         } catch (err) { toast(err.message || "خطا در حذف پیام", "error"); }
       }
-    }, { canDelete, canReport, canPin, isPinned, hideReactions: isChannel, hideReply: isChannel });
+    }, { canDelete, canReport, canPin, isPinned, canSave: true, hideReactions: isChannel, hideReply: isChannel });
   }, 420);
 });
 ["pointerup", "pointerleave", "pointercancel"].forEach(evt => {
@@ -1350,6 +1401,112 @@ document.addEventListener("click", e => {
   if (photo) openLightbox(photo.src);
 });
 
+async function handleGoogleAuth(){
+  try {
+    document.querySelectorAll("#googleLoginBtn,#googleSignupBtn").forEach(b=>{b.disabled=true;b.classList.add("loading")});
+    await signInWithGoogle();
+  } catch(err){
+    toast(err?.message||"ورود با Google ناموفق بود.","error");
+  } finally { document.querySelectorAll("#googleLoginBtn,#googleSignupBtn").forEach(b=>{b.disabled=false;b.classList.remove("loading")}); }
+}
+$("#googleLoginBtn")?.addEventListener("click",handleGoogleAuth);
+$("#googleSignupBtn")?.addEventListener("click",handleGoogleAuth);
+
+/* ==================== تنظیمات نسل جدید ==================== */
+
+const SETTINGS_INDEX = [
+  ["account","حساب","پروفایل، ایمیل و مدیریت حساب"],["security","امنیت","Security Center و نشست‌ها"],["privacy","حریم خصوصی","دیدپذیری، پیام و استوری"],["devices","دستگاه‌ها و نشست‌ها","نشست‌های واقعی"],["storage","فضای ذخیره‌سازی","مصرف رسانه و پاک‌سازی"],["ai","هوش مصنوعی","AI، Voice و کنترل داده"],["notifications","اعلان‌ها","پیام، تماس، استوری و امنیت"],["appearance","ظاهر","تم، متن و حرکت"],["chat","گفتگو","Bubble، Enter و حذف خودکار"],["network","داده و شبکه","Data Saver و کیفیت رسانه"],["about","درباره هویت","نسخه و اطلاعات محصول"]
+];
+
+function settingsEsc(v){ return escapeHtml(String(v ?? "")); }
+async function getAppPrefs(){
+  const uid=auth.currentUser?.uid; if(!uid) return {};
+  const {data}=await supabase.from("hoviyat_app_preferences").select("*").eq("uid",uid).maybeSingle();
+  return data||{};
+}
+async function saveAppPrefs(patch){
+  const uid=auth.currentUser?.uid; if(!uid) throw new Error("ابتدا وارد شوید.");
+  const {error}=await supabase.from("hoviyat_app_preferences").upsert({uid,...patch,updated_at:new Date().toISOString()},{onConflict:"uid"});
+  if(error) throw error;
+}
+async function loadPrivacyPrefs(){
+  const uid=auth.currentUser?.uid; if(!uid) return {};
+  const {data,error}=await supabase.from("hoviyat_privacy_preferences").select("*").eq("uid",uid).maybeSingle();
+  if(error) throw error; return data||{};
+}
+async function savePrivacyPrefs(patch){
+  const uid=auth.currentUser?.uid; if(!uid) throw new Error("ابتدا وارد شوید.");
+  const {error}=await supabase.from("hoviyat_privacy_preferences").upsert({uid,...patch,updated_at:new Date().toISOString()},{onConflict:"uid"});
+  if(error) throw error;
+}
+
+async function renderSettingsDetail(key){
+  const box=$("#settingsDetail"); if(!box) return; box.hidden=false;
+  let html=`<div class="settings-detail-head"><button type="button" class="icon-btn" id="settingsDetailBack">‹</button><div><span class="hv-kicker">HOVIYAT SETTINGS</span><h3>${settingsEsc(SETTINGS_INDEX.find(x=>x[0]===key)?.[1]||"تنظیمات")}</h3></div></div>`;
+  try {
+    if(key==="account"){
+      const d=(await getUserDoc(auth.currentUser?.uid))||{}; const email=auth.currentUser?.email||"—";
+      html+=`<div class="settings-form-grid"><div class="settings-item"><label>نام نمایشی</label><input id="detailDisplayName" value="${settingsEsc(d.displayName)}"></div><div class="settings-item"><label>Username</label><input value="@${settingsEsc(d.username)}" disabled dir="ltr"></div><div class="settings-item"><label>ایمیل</label><input value="${settingsEsc(email)}" disabled dir="ltr"></div><div class="settings-item"><label>بیو</label><input id="detailBio" value="${settingsEsc(d.bio)}"></div></div><button class="btn-primary full" id="saveAccountDetail">ذخیره اطلاعات حساب</button>`;
+    } else if(key==="privacy"){
+      const p=await loadPrivacyPrefs();
+      html+=`<div class="settings-detail-grid">
+      ${settingSelect("profile_visibility","نمایش پروفایل",p.profile_visibility||"contacts",[["everyone","همه"],["contacts","مخاطبان"],["nobody","هیچ‌کس"]])}
+      ${settingSelect("message_permission","چه کسانی پیام بدهند",p.message_permission||"everyone",[["everyone","همه"],["contacts","مخاطبان"],["nobody","هیچ‌کس"]])}
+      ${settingSelect("call_permission","چه کسانی تماس بگیرند",p.call_permission||"contacts",[["everyone","همه"],["contacts","مخاطبان"],["nobody","هیچ‌کس"]])}
+      ${settingSelect("story_visibility","نمایش استوری",p.story_visibility||"contacts",[["everyone","همه"],["contacts","مخاطبان"],["close_friends","دوستان نزدیک"],["nobody","هیچ‌کس"]])}
+      ${settingSelect("last_seen_visibility","آخرین بازدید",p.last_seen_visibility||"contacts",[["everyone","همه"],["contacts","مخاطبان"],["nobody","هیچ‌کس"]])}
+      ${settingToggle("online_status","وضعیت آنلاین",p.online_status!==false)}${settingToggle("read_receipts","رسید خواندن",p.read_receipts!==false)}${settingToggle("typing_indicator","نمایش در حال تایپ",p.typing_indicator!==false)}${settingToggle("story_replies","پاسخ به استوری",p.story_replies!==false)}${settingToggle("ai_data_usage","استفاده از داده گفتگو برای AI",p.ai_data_usage===true)}
+      </div><button class="btn-primary full" id="savePrivacyDetail">ذخیره حریم خصوصی</button>`;
+    } else if(key==="devices"){
+      html+=`<div id="settingsDevicesHolder" class="security-list"><p class="empty-hint">در حال دریافت نشست‌ها…</p></div><button class="btn-outline full" id="logoutOtherDevicesBtn">خروج از همه دستگاه‌های دیگر</button>`;
+    } else if(key==="storage"){
+      html+=`<div class="storage-summary" id="storageSummary"><p>در حال محاسبه…</p></div><button class="btn-outline full" id="clearCacheBtn">پاک‌سازی Cache محلی</button>`;
+    } else if(key==="ai"){
+      const p=await getAppPrefs();
+      html+=`<div class="settings-detail-grid">${settingToggle("ai_chat_enabled","AI Chat",p.ai_chat_enabled!==false)}${settingToggle("ai_voice_enabled","Voice Assistant",p.ai_voice_enabled!==false)}${settingToggle("ai_summaries_enabled","AI Summaries",p.ai_summaries_enabled!==false)}${settingToggle("ai_suggestions_enabled","AI Suggestions",p.ai_suggestions_enabled!==false)}</div><div class="settings-api-status"><b>API</b><span id="aiApiStatus">در حال بررسی…</span></div><button class="btn-primary full" id="saveAiDetail">ذخیره تنظیمات AI</button>`;
+    } else if(key==="notifications"){
+      const p=await getAppPrefs(); const n=p.notification_preferences||{};
+      html+=`<div class="settings-detail-grid">${settingToggle("n_messages","پیام‌ها",n.messages!==false)}${settingToggle("n_calls","تماس‌ها",n.calls!==false)}${settingToggle("n_stories","Stories",n.stories!==false)}${settingToggle("n_reactions","واکنش‌ها",n.reactions!==false)}${settingToggle("n_mentions","Mentions",n.mentions!==false)}${settingToggle("n_ai","AI",n.ai!==false)}${settingToggle("n_security","اعلان‌های امنیتی",n.security!==false)}${settingToggle("quiet_hours_enabled","Quiet Hours",p.quiet_hours_enabled===true)}</div><button class="btn-primary full" id="saveNotificationsDetail">ذخیره اعلان‌ها</button>`;
+    } else if(key==="appearance"){
+      const p=await getAppPrefs();
+      html+=`${settingSelect("theme","تم برنامه",document.documentElement.dataset.theme||"system",[["light","روشن"],["dark","تیره"],["system","سیستم"]])}${settingSelect("font_scale","اندازه متن",p.font_scale||"normal",[["small","کوچک"],["normal","عادی"],["large","بزرگ"],["xlarge","خیلی بزرگ"]])}${settingSelect("motion","حرکت",p.animation_pack||"mega",[["mega","کامل"],["reduced","کاهش‌یافته"],["off","خاموش"]])}<button class="btn-primary full" id="saveAppearanceDetail">ذخیره ظاهر</button>`;
+    } else if(key==="chat"){
+      const p=await getAppPrefs(); html+=`${settingToggle("enter_to_send","Enter برای ارسال",p.enter_to_send!==false)}${settingToggle("media_autoplay","پخش خودکار رسانه",p.media_autoplay!==false)}${settingSelect("bubble_style","سبک Bubble",p.bubble_style||"rounded",[["rounded","گرد"],["soft","نرم"],["compact","فشرده"]])}${settingSelect("chat_wallpaper","پس‌زمینه چت",p.chat_wallpaper||"default",[["default","پیش‌فرض"],["plain","ساده"],["soft","ملایم"],["night","شب"]])}<button class="btn-primary full" id="saveChatDetail">ذخیره گفتگو</button>`;
+    } else if(key==="network"){
+      const p=await getAppPrefs(); html+=`${settingToggle("data_saver","Data Saver",p.data_saver===true)}${settingSelect("media_quality","کیفیت رسانه",p.media_quality||"auto",[["low","کم"],["standard","استاندارد"],["high","بالا"],["auto","خودکار"]])}<div class="settings-info">برای Auto Download پیش‌فرض امن‌تر انتخاب شده تا مصرف اینترنت کنترل شود.</div><button class="btn-primary full" id="saveNetworkDetail">ذخیره شبکه</button>`;
+    } else if(key==="about"){
+      html+=`<div class="about-release"><b>هویت</b><span>Release 2026</span><small>Supabase + Capacitor • UI Design System 2026</small><small>قابلیت‌هایی که هنوز API یا زیرساخت لازم ندارند در UI به‌عنوان فعال نمایش داده نمی‌شوند.</small></div>`;
+    } else if(key==="security"){
+      html+=`<div class="settings-info">مرکز امنیتی کامل در صفحه Security Center قرار دارد.</div><button class="btn-primary full" id="openSecurityFromDetail">باز کردن Security Center</button>`;
+    }
+  } catch(e){ html+=`<div class="settings-info error">${settingsEsc(e.message||"خطا در دریافت تنظیمات")}</div>`; }
+  box.innerHTML=html;
+  $("#settingsDetailBack")?.addEventListener("click",()=>{box.hidden=true;box.innerHTML="";});
+  bindSettingsDetail(key);
+}
+function settingToggle(id,label,on){return `<label class="settings-item toggle-item detail-toggle"><span>${settingsEsc(label)}</span><button type="button" class="toggle-switch" data-detail-toggle="${id}" aria-pressed="${!!on}"><span class="knob"></span></button></label>`}
+function settingSelect(id,label,value,options){return `<div class="settings-item"><label>${settingsEsc(label)}</label><select id="detail_${settingsEsc(id)}">${options.map(([v,l])=>`<option value="${v}" ${v===value?'selected':''}>${settingsEsc(l)}</option>`).join("")}</select></div>`}
+async function bindSettingsDetail(key){
+  document.querySelectorAll("[data-detail-toggle]").forEach(btn=>btn.addEventListener("click",()=>btn.setAttribute("aria-pressed",String(btn.getAttribute("aria-pressed")!=="true"))));
+  if(key==="account") $("#saveAccountDetail")?.addEventListener("click",async()=>{const uid=auth.currentUser?.uid;const {error}=await supabase.from("profiles").update({display_name:$("#detailDisplayName").value.trim(),bio:$("#detailBio").value.trim()}).eq("id",uid);if(error)throw error;toast("حساب ذخیره شد","success");});
+  if(key==="privacy") $("#savePrivacyDetail")?.addEventListener("click",async()=>{const patch={};["online_status","read_receipts","typing_indicator","story_replies","ai_data_usage"].forEach(id=>patch[id]=$("[data-detail-toggle='"+id+"']").getAttribute("aria-pressed")==="true");["profile_visibility","message_permission","call_permission","story_visibility","last_seen_visibility"].forEach(id=>patch[id]=$("#detail_"+id).value);await savePrivacyPrefs(patch);toast("حریم خصوصی ذخیره شد","success");});
+  if(key==="devices"){const sessions=await security.listMySessions();const h=$("#settingsDevicesHolder");h.innerHTML=sessions.length?sessions.map(s=>`<div class="security-row"><div><strong>${settingsEsc(s.device_label)}</strong>${s.isCurrent?' <span class="verified-badge">دستگاه فعلی</span>':''}<br><small>${new Date(s.last_active_at).toLocaleString("fa-IR")}</small></div>${s.isCurrent?'':`<button class="btn-outline small danger" data-revoke="${settingsEsc(s.device_id)}">خروج</button>`}</div>`).join(""):`<p class="empty-hint">نشستی ثبت نشده.</p>`;h.querySelectorAll("[data-revoke]").forEach(b=>b.addEventListener("click",async()=>{await security.revokeSession(b.dataset.revoke);await renderSettingsDetail("devices");}));$("#logoutOtherDevicesBtn")?.addEventListener("click",async()=>{for(const s of sessions.filter(x=>!x.isCurrent))await security.revokeSession(s.device_id);toast("از دستگاه‌های دیگر خارج شدی","success");await renderSettingsDetail("devices");});}
+  if(key==="storage"){const {data,error}=await supabase.rpc("get_my_storage_usage");const h=$("#storageSummary");if(error)h.innerHTML=`<p class="settings-info">${settingsEsc(error.message)}</p>`;else{const fmt=n=>{n=Number(n||0);if(n<1024*1024)return `${Math.round(n/1024)} KB`;if(n<1024**3)return `${(n/1024**2).toFixed(1)} MB`;return `${(n/1024**3).toFixed(2)} GB`};h.innerHTML=`<div class="storage-total"><b>${fmt(data?.total_bytes)}</b><span>${data?.items||0} فایل/رسانه</span></div><div class="storage-bars"><span>تصویر ${fmt(data?.images_bytes)}</span><span>ویدئو ${fmt(data?.videos_bytes)}</span><span>صدا ${fmt(data?.audio_bytes)}</span><span>فایل ${fmt(data?.files_bytes)}</span></div>`;}$("#clearCacheBtn")?.addEventListener("click",async()=>{try{const keys=Object.keys(localStorage).filter(k=>!k.startsWith("sb-"));keys.forEach(k=>localStorage.removeItem(k));if("caches" in window){for(const k of await caches.keys())await caches.delete(k);}toast("Cache محلی پاک شد","success");}catch{toast("پاک‌سازی Cache کامل نشد","error");}});}
+  if(key==="ai"){const status=$("#aiApiStatus");try{const {data}=await supabase.functions.invoke("hoviyat-ai",{body:{mode:"last",messages:[]}});status.textContent=data?.configured===false?"API Secret تنظیم نشده، fallback فعال است":"متصل";}catch{status.textContent="در دسترس نیست"}$("#saveAiDetail")?.addEventListener("click",async()=>{const p={};["ai_chat_enabled","ai_voice_enabled","ai_summaries_enabled","ai_suggestions_enabled"].forEach(id=>p[id]=$("[data-detail-toggle='"+id+"']").getAttribute("aria-pressed")==="true");await saveAppPrefs(p);toast("تنظیمات AI ذخیره شد","success");});}
+  if(key==="notifications")$("#saveNotificationsDetail")?.addEventListener("click",async()=>{const n={};["messages","calls","stories","reactions","mentions","ai","security"].forEach(k=>n[k]=$("[data-detail-toggle='n_"+k+"']").getAttribute("aria-pressed")==="true");const p={notification_preferences:n,quiet_hours_enabled:$("[data-detail-toggle='quiet_hours_enabled']").getAttribute("aria-pressed")==="true"};await saveAppPrefs(p);toast("اعلان‌ها ذخیره شد","success");});
+  if(key==="appearance")$("#saveAppearanceDetail")?.addEventListener("click",async()=>{const theme=$("#detail_theme").value;const scale=$("#detail_font_scale").value;const motion=$("#detail_motion").value;await saveAppPrefs({font_scale:scale,animation_pack:motion});if(theme!=="system")document.documentElement.dataset.theme=theme;else document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";toast("ظاهر ذخیره شد","success");});
+  if(key==="chat")$("#saveChatDetail")?.addEventListener("click",async()=>{const p={enter_to_send:$("[data-detail-toggle='enter_to_send']").getAttribute("aria-pressed")==="true",media_autoplay:$("[data-detail-toggle='media_autoplay']").getAttribute("aria-pressed")==="true",bubble_style:$("#detail_bubble_style").value,chat_wallpaper:$("#detail_chat_wallpaper").value};await saveAppPrefs(p);toast("تنظیمات گفتگو ذخیره شد","success");});
+  if(key==="network")$("#saveNetworkDetail")?.addEventListener("click",async()=>{await saveAppPrefs({data_saver:$("[data-detail-toggle='data_saver']").getAttribute("aria-pressed")==="true",media_quality:$("#detail_media_quality").value});toast("تنظیمات شبکه ذخیره شد","success");});
+  $("#openSecurityFromDetail")?.addEventListener("click",()=>switchView("security"));
+}
+
+function initSettingsDashboard(){
+  if(window.__HOVIYAT_SETTINGS_INIT) return; window.__HOVIYAT_SETTINGS_INIT=true;
+  document.querySelectorAll("[data-settings-open]").forEach(b=>b.addEventListener("click",()=>renderSettingsDetail(b.dataset.settingsOpen)));
+  const input=$("#settingsSearchInput"); const results=$("#settingsSearchResults");
+  input?.addEventListener("input",()=>{const q=input.value.trim().toLowerCase();if(!q){results.hidden=true;return;}const hits=SETTINGS_INDEX.filter(x=>x.join(" ").toLowerCase().includes(q));results.innerHTML=hits.length?hits.map(x=>`<button type="button" data-search-open="${x[0]}"><b>${settingsEsc(x[1])}</b><small>${settingsEsc(x[2])}</small></button>`).join(""):`<div class="settings-info">تنظیمی با این عبارت پیدا نشد.</div>`;results.hidden=false;results.querySelectorAll("[data-search-open]").forEach(b=>b.onclick=()=>{results.hidden=true;input.value="";renderSettingsDetail(b.dataset.searchOpen);});});
+}
+
 /* ==================== تنظیمات ==================== */
 
 function renderTopbarAvatar(photoURL, name) {
@@ -1358,45 +1515,24 @@ function renderTopbarAvatar(photoURL, name) {
     : `<span id="myAvatarInitial">${escapeHtml((name || "؟")[0])}</span>`;
 }
 
-function renderSettingsAvatar(photoURL, name) {
-  const el = $("#settingsAvatarPreview");
-  el.innerHTML = photoURL ? `<img src="${escapeHtml(photoURL)}">` : `<span>${escapeHtml((name || "؟")[0])}</span>`;
+async function loadSettingsForm(){
+  const d=(await getUserDoc(auth.currentUser?.uid))||{};
+  renderTopbarAvatar(d.photoURL,d.displayName||d.username);
+  try{
+    const sessions=await security.listMySessions();
+    const el=$("#settingsSessionsCount"); if(el) el.textContent=String(sessions.length);
+  }catch{}
+  try{
+    const {data}=await supabase.rpc("get_my_storage_usage");
+    const el=$("#settingsStorageStatus"); if(el){const n=Number(data?.total_bytes||0);el.textContent=n>=1024**3?`${(n/1024**3).toFixed(1)} GB`:n>=1024**2?`${(n/1024**2).toFixed(0)} MB`:`${Math.round(n/1024)} KB`;}
+  }catch{}
+  try{
+    const settings=await security.getSecuritySettings();
+    const sessions=await security.listMySessions();
+    const score=security.computeSecurityScore(settings,sessions.length)?.score ?? 0;
+    const el=$("#settingsSecurityStatus"); if(el) el.textContent=score>=80?"Good":score>=60?"Needs attention":"Review";
+  }catch{}
 }
-
-async function loadSettingsForm() {
-  const d = (await getUserDoc(auth.currentUser?.uid)) || {};
-  $("#settingsDisplayName").value = d.displayName || "";
-  $("#settingsBio").value = d.bio || "";
-  $("#settingsPhone").value = d.phone || "";
-  $("#settingsCity").value = d.weatherCity || "";
-  renderSettingsAvatar(d.photoURL, d.displayName || d.username);
-}
-
-$("#settingsAvatarBtn").addEventListener("click", () => $("#settingsAvatarInput").click());
-$("#settingsAvatarInput").addEventListener("change", async e => {
-  const file = e.target.files?.[0];
-  e.target.value = "";
-  if (!file) return;
-  if (!MEDIA_UPLOADS_ENABLED) { toast("آپلود عکس هنوز فعال نیست."); return; }
-  try {
-    const url = await updateMyAvatar(file);
-    renderSettingsAvatar(url);
-    renderTopbarAvatar(url);
-    toast("عکس پروفایل عوض شد", "success");
-  } catch (err) {
-    toast(err.message || "خطا در آپلود عکس.", "error");
-  }
-});
-
-$("#saveSettingsBtn").addEventListener("click", async () => {
-  await supabase.from("profiles").update({
-    display_name: $("#settingsDisplayName").value.trim(),
-    bio: $("#settingsBio").value.trim(),
-    phone: $("#settingsPhone").value.trim(),
-    weather_city: $("#settingsCity").value.trim() || "بیرجند",
-  }).eq("id", auth.currentUser?.uid);
-  toast("ذخیره شد", "success");
-});
 
 $("#logoutBtn").addEventListener("click", async () => {
   await logOut();
@@ -1459,14 +1595,14 @@ async function checkAnnouncement() {
 function loadThemePref() {
   const saved = localStorage.getItem("hoviyat_theme") || "light";
   document.documentElement.setAttribute("data-theme", saved);
-  $("#darkModeToggle").setAttribute("aria-pressed", String(saved === "dark"));
+  $("#darkModeToggle")?.setAttribute("aria-pressed", String(saved === "dark"));
 }
-$("#darkModeToggle").addEventListener("click", () => {
+$("#darkModeToggle")?.addEventListener("click", () => {
   const cur = document.documentElement.getAttribute("data-theme");
   const next = cur === "dark" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem("hoviyat_theme", next);
-  $("#darkModeToggle").setAttribute("aria-pressed", String(next === "dark"));
+  $("#darkModeToggle")?.setAttribute("aria-pressed", String(next === "dark"));
 });
 
 /* ==================== Service Worker (PWA) ==================== */
@@ -1476,7 +1612,7 @@ if ("serviceWorker" in navigator) {
 
 /* ==================== مرکز امنیت حساب ==================== */
 
-$("#openSecurityCenterBtn").addEventListener("click", async () => {
+$("#openSecurityCenterBtn")?.addEventListener("click", async () => {
   switchView("security");
   try { await loadSecurityCenter(); } catch (err) { toast(friendlySecurityError(err)); }
 });
@@ -1775,8 +1911,11 @@ $("#callCameraBtn").addEventListener("click", () => {
   const camOff = callManager.toggleCamera();
   $("#callCameraBtn").classList.toggle("active", camOff);
 });
+$("#callSwitchCameraBtn")?.addEventListener("click", async () => { try { const ok=await callManager.switchCamera(); if(!ok) toast("دوربین دیگری پیدا نشد."); } catch(e){ toast("تعویض دوربین ناموفق بود.","error"); } });
+$("#callSpeakerBtn")?.addEventListener("click", async () => { const v=$("#callRemoteVideo"); if(!v?.setSinkId){toast("کنترل بلندگو روی این دستگاه در دسترس نیست.");return;} try{const current=v.dataset.speaker==="1"?"":"default";await v.setSinkId(current);v.dataset.speaker=current?"1":"0";$("#callSpeakerBtn").classList.toggle("active",!!current);}catch{toast("تغییر خروجی صدا ناموفق بود.","error");} });
 
 async function startOutgoingCall(video) {
+  try { await assertActionAllowed(video ? 'video_call' : 'call'); } catch (err) { toast(err.message); return; }
   if (!currentEntity || currentEntity.mode !== "private") return;
   if (callManager.isInCall()) { toast("همین الان یه تماس دیگه فعاله"); return; }
   const otherUser = currentEntity.data;
@@ -1824,6 +1963,7 @@ async function openSecretListView() {
 async function openSecretChatById(otherUid, otherInfoHint) {
   switchView("secretchat");
   const { chat, aesKey } = await openSecretChatWith(otherUid);
+  const keyStatus = await checkOtherKeyChange(otherUid);
   teardownSecretChat();
   switchView("secretchat");
 
@@ -1840,7 +1980,7 @@ async function openSecretChatById(otherUid, otherInfoHint) {
       <button id="secretChatBackBtn" class="icon-btn">${icon("chevronLeft")}</button>
       <div class="chat-header-info">
         <strong>${icon("lock", { size: 15 })} ${escapeHtml(otherInfo.displayName || otherInfo.username || "کاربر")}</strong>
-        <div class="secret-expiry-hint">${secretCountdownText(lastMsgAt)}</div>
+        <div class="secret-expiry-hint">${secretCountdownText(lastMsgAt)}${keyStatus.changed ? ' · ⚠️ کلید امنیتی تغییر کرده' : ' · 🔐 E2E'}</div>
       </div>`;
     $("#secretChatBackBtn").onclick = () => openSecretListView();
   };
@@ -1872,3 +2012,13 @@ $("#secretComposerForm").addEventListener("submit", async e => {
     input.value = text;
   }
 });
+
+
+/* ==================== اعلان‌های اجتماعی ==================== */
+$("#notificationsBtn")?.addEventListener("click", async () => {
+  const modal = $("#notificationsModal");
+  modal.hidden = false;
+  try { await loadNotifications($("#notificationsHolder")); } catch (e) { $("#notificationsHolder").innerHTML = `<p class="story-empty">${escapeHtml(e.message || "اعلان‌ها در دسترس نیستند")}</p>`; }
+});
+$("#notificationsClose")?.addEventListener("click", () => $("#notificationsModal").hidden = true);
+$("#notificationsModal")?.addEventListener("click", e => { if (e.target.id === "notificationsModal") e.currentTarget.hidden = true; });

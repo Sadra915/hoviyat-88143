@@ -4,6 +4,8 @@
  * (نسخه Supabase)
  */
 import { supabase, auth, uniqueChannelName } from "./supabase-init.js";
+import { uploadPrivateMedia, hydrateMediaMessages } from "./media-storage.js";
+import { assertActionAllowed } from "./restrictions.js";
 
 /** نام فایل کاربر می‌تواند کاراکترهای ناامن برای مسیر Storage داشته باشد؛ پاک‌سازی می‌شود. */
 function sanitizeFilename(name) {
@@ -28,6 +30,7 @@ function mapPost(row) {
 }
 
 export async function createChannel(name, description, isPublic) {
+  await assertActionAllowed('create_channel');
   const me = auth.currentUser;
   const { data, error } = await supabase.from("channels").insert({
     name: name.trim(), description: (description || "").trim(),
@@ -71,7 +74,7 @@ export function watchChannelPosts(channelId, callback) {
   async function refetch() {
     const { data } = await supabase.from("channel_posts")
       .select("*").eq("channel_id", channelId).order("created_at", { ascending: true }).limit(300);
-    if (!stopped) callback((data || []).map(mapPost));
+    if (!stopped) callback(await hydrateMediaMessages((data || []).map(mapPost)));
   }
 
   refetch();
@@ -84,6 +87,7 @@ export function watchChannelPosts(channelId, callback) {
 }
 
 export async function postChannelText(channelId, text) {
+  await assertActionAllowed('send_messages');
   const body = text.trim();
   if (!body) return;
   const { error } = await supabase.rpc("post_channel_message", { p_channel_id: channelId, p_type: "text", p_body: body });
@@ -91,12 +95,18 @@ export async function postChannelText(channelId, text) {
 }
 
 export async function postChannelImage(channelId, file) {
-  const path = `${channelId}/${Date.now()}_${sanitizeFilename(file.name)}`;
-  const { error: upErr } = await supabase.storage.from("channel-media").upload(path, file);
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from("channel-media").getPublicUrl(path);
-  const { error } = await supabase.rpc("post_channel_message", { p_channel_id: channelId, p_type: "image", p_media_url: pub.publicUrl });
+  await assertActionAllowed('send_media');
+  const uploaded = await uploadPrivateMedia("channel-media", channelId, file, "image");
+  const { error } = await supabase.rpc("post_channel_message", { p_channel_id: channelId, p_type: "image", p_media_url: uploaded.ref });
   if (error) throw error;
+}
+
+export async function postChannelVideo(channelId, file) {
+  await assertActionAllowed('send_media');
+  const uploaded = await uploadPrivateMedia("channel-media", channelId, file, "video");
+  const { error } = await supabase.rpc("post_channel_message", { p_channel_id: channelId, p_type: "video", p_media_url: uploaded.ref });
+  if (error) throw error;
+  return uploaded;
 }
 
 export async function subscribeChannel(channelId) {
@@ -141,12 +151,10 @@ export async function deleteChannel(channelId) {
 /** آپلود عکس پروفایل کانال — فقط ادمین (سیاست insert باکت channel-media همین الان هم فقط ادمین‌ها را مجاز می‌داند) */
 export async function updateChannelPhoto(channelId, file) {
   const path = `${channelId}/avatar_${Date.now()}_${sanitizeFilename(file.name)}`;
-  const { error: upErr } = await supabase.storage.from("channel-media").upload(path, file);
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from("channel-media").getPublicUrl(path);
-  const { error } = await supabase.from("channels").update({ photo_url: pub.publicUrl }).eq("id", channelId);
+  const uploaded = await uploadPrivateMedia("channel-media", channelId, file, "avatar");
+  const { error } = await supabase.from("channels").update({ photo_url: uploaded.ref }).eq("id", channelId);
   if (error) throw error;
-  return pub.publicUrl;
+  return uploaded.ref;
 }
 
 /** گزارش یک پست کانال به پنل ادمین */

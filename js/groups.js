@@ -4,6 +4,8 @@
  * (نسخه Supabase — عملیات مرکب از طریق توابع RPC تعریف‌شده در supabase/schema.sql)
  */
 import { supabase, auth, uniqueChannelName, waitForAuthReady } from "./supabase-init.js";
+import { uploadPrivateMedia, hydrateMediaMessages } from "./media-storage.js";
+import { assertActionAllowed } from "./restrictions.js";
 
 /** نام فایل کاربر می‌تواند کاراکترهای ناامن برای مسیر Storage داشته باشد؛ پاک‌سازی می‌شود. */
 function sanitizeFilename(name) {
@@ -40,6 +42,7 @@ function mapMessage(row) {
 
 /** ساخت گروه جدید؛ سازنده به‌صورت خودکار ادمین و عضو می‌شود. برمی‌گرداند: groupId */
 export async function createGroup(name, memberUsers, opts = {}) {
+  await assertActionAllowed('create_group');
   const { data, error } = await supabase.rpc("create_group", {
     p_name: name.trim(), p_member_ids: memberUsers.map(u => u.uid),
   });
@@ -94,7 +97,7 @@ export function watchGroupMessages(groupId, callback) {
   async function refetch() {
     const { data } = await supabase.from("group_messages")
       .select("*").eq("group_id", groupId).order("created_at", { ascending: true }).limit(300);
-    if (!stopped) callback((data || []).map(mapMessage));
+    if (!stopped) callback(await hydrateMediaMessages((data || []).map(mapMessage)));
   }
 
   refetch();
@@ -107,6 +110,7 @@ export function watchGroupMessages(groupId, callback) {
 }
 
 export async function sendGroupText(groupId, text, replyTo = null) {
+  await assertActionAllowed('send_messages');
   const body = text.trim();
   if (!body) return;
   const { error } = await supabase.rpc("send_group_message", {
@@ -116,6 +120,7 @@ export async function sendGroupText(groupId, text, replyTo = null) {
 }
 
 export async function sendGroupSticker(groupId, sticker, replyTo = null) {
+  await assertActionAllowed('send_messages');
   const { error } = await supabase.rpc("send_group_message", {
     p_group_id: groupId, p_type: "sticker", p_body: sticker, p_reply_to: replyTo,
   });
@@ -128,27 +133,32 @@ export async function deleteGroupMessage(groupId, messageId) {
 }
 
 export async function sendGroupImage(groupId, file) {
-  const path = `${groupId}/${Date.now()}_${sanitizeFilename(file.name)}`;
-  const { error: upErr } = await supabase.storage.from("group-media").upload(path, file);
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from("group-media").getPublicUrl(path);
-  const { error } = await supabase.rpc("send_group_message", { p_group_id: groupId, p_type: "image", p_media_url: pub.publicUrl });
+  await assertActionAllowed('send_media');
+  const uploaded = await uploadPrivateMedia("group-media", groupId, file, "image");
+  const { error } = await supabase.rpc("send_group_message", { p_group_id: groupId, p_type: "image", p_media_url: uploaded.ref });
   if (error) throw error;
 }
 
+export async function sendGroupVideo(groupId, file) {
+  await assertActionAllowed('send_media');
+  const uploaded = await uploadPrivateMedia("group-media", groupId, file, "video");
+  const { error } = await supabase.rpc("send_group_message", { p_group_id: groupId, p_type: "video", p_media_url: uploaded.ref });
+  if (error) throw error;
+  return uploaded;
+}
+
 export async function sendGroupVoice(groupId, blob, durationSec, waveform) {
-  const path = `${groupId}/voice_${Date.now()}.webm`;
-  const { error: upErr } = await supabase.storage.from("group-media").upload(path, blob);
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from("group-media").getPublicUrl(path);
+  await assertActionAllowed('send_voice');
+  const uploaded = await uploadPrivateMedia("group-media", groupId, new File([blob], `voice_${Date.now()}.webm`, { type: blob.type || "audio/webm" }), "voice");
   const { error } = await supabase.rpc("send_group_message", {
-    p_group_id: groupId, p_type: "voice", p_media_url: pub.publicUrl,
+    p_group_id: groupId, p_type: "voice", p_media_url: uploaded.ref,
     p_duration: durationSec, p_waveform: waveform || [],
   });
   if (error) throw error;
 }
 
 export async function toggleGroupReaction(groupId, messageId, emoji) {
+  await assertActionAllowed('react');
   await supabase.rpc("toggle_group_reaction", { p_group_id: groupId, p_message_id: messageId, p_emoji: emoji });
 }
 
@@ -259,15 +269,13 @@ export async function updateGroupPermissions(groupId, permissions) {
   if (error) throw error;
 }
 
-/** آپلود عکس پروفایل گروه و ذخیره‌ی آدرسش — فقط ادمین */
+/** آپلود عکس پروفایل گروه و ذخیره‌ی مرجع امن Storage — فقط ادمین */
 export async function updateGroupPhoto(groupId, file) {
   const path = `${groupId}/avatar_${Date.now()}_${sanitizeFilename(file.name)}`;
-  const { error: upErr } = await supabase.storage.from("group-media").upload(path, file);
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from("group-media").getPublicUrl(path);
-  const { error } = await supabase.from("groups").update({ photo_url: pub.publicUrl }).eq("id", groupId);
+  const uploaded = await uploadPrivateMedia("group-media", groupId, file, "avatar");
+  const { error } = await supabase.from("groups").update({ photo_url: uploaded.ref }).eq("id", groupId);
   if (error) throw error;
-  return pub.publicUrl;
+  return uploaded.ref;
 }
 
 /** فقط برای پنل ادمین: همه‌ی گروه‌ها (نه فقط گروه‌هایی که خودش عضو است) */

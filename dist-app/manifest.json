@@ -3,8 +3,8 @@
   "short_name": "هویت",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#F3F1EE",
-  "theme_color": "#F0651E",
+  "background_color": "#0B1020",
+  "theme_color": "#0B1020",
   "icons": [
     {
       "src": "assets/icons/icon-192.png",

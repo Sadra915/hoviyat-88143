@@ -142,3 +142,5 @@ html[data-power="saving"] #appShell .glass,html[data-power="saving"] #appShell .
   #appShell .composer{margin-inline:7px!important;border-radius:21px!important;}
   #appShell .glass{--hu-blur:18px;}
 }
+
+.bubble-video{display:block;width:min(100%,420px);max-height:420px;border-radius:18px;background:#000;object-fit:contain;margin-top:4px;}

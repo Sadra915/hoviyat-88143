@@ -6,6 +6,8 @@
  */
 import { supabase, auth, uniqueChannelName, waitForAuthReady } from "./supabase-init.js";
 import { mapProfile } from "./auth.js";
+import { uploadPrivateMedia, hydrateMediaMessages } from "./media-storage.js";
+import { assertActionAllowed } from "./restrictions.js";
 
 /** شناسه قطعی و یکتای چت خصوصی بین دو کاربر (مستقل از ترتیب) — دقیقاً مثل نسخه قبلی */
 function chatIdFor(uidA, uidB) {
@@ -139,7 +141,7 @@ export function watchMessages(chatId, callback) {
     // تابع سرور ممکن است که هم عضویت را چک می‌کند و هم رمزگشایی را انجام می‌دهد.
     const { data, error } = await supabase.rpc("get_chat_messages", { p_chat_id: chatId });
     if (error) { console.error(error); return; }
-    if (!stopped) callback((data || []).map(mapMessage));
+    if (!stopped) callback(await hydrateMediaMessages((data || []).map(mapMessage)));
   }
 
   refetch();
@@ -157,6 +159,7 @@ export async function markChatRead(chatId) {
 }
 
 export async function sendTextMessage(chatId, text, replyTo = null) {
+  await assertActionAllowed('send_messages');
   const body = text.trim();
   if (!body) return;
   const { error } = await supabase.rpc("send_chat_message", {
@@ -166,6 +169,7 @@ export async function sendTextMessage(chatId, text, replyTo = null) {
 }
 
 export async function sendStickerMessage(chatId, sticker, replyTo = null) {
+  await assertActionAllowed('send_messages');
   const { error } = await supabase.rpc("send_chat_message", {
     p_chat_id: chatId, p_type: "sticker", p_body: sticker, p_reply_to: replyTo,
   });
@@ -178,28 +182,32 @@ export async function deleteMessage(chatId, messageId) {
 }
 
 export async function sendImageMessage(chatId, file) {
-  const path = `${chatId}/${Date.now()}_${sanitizeFilename(file.name)}`;
-  const { error: upErr } = await supabase.storage.from("chat-media").upload(path, file);
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from("chat-media").getPublicUrl(path);
-  const { error } = await supabase.rpc("send_chat_message", { p_chat_id: chatId, p_type: "image", p_media_url: pub.publicUrl });
+  await assertActionAllowed('send_media');
+  const uploaded = await uploadPrivateMedia("chat-media", chatId, file, "image");
+  const { error } = await supabase.rpc("send_chat_message", { p_chat_id: chatId, p_type: "image", p_media_url: uploaded.ref });
   if (error) throw error;
 }
 
-/** آپلود پیام صوتی + موج صدای واقعی (آرایه دامنه‌ها که هنگام ضبط استخراج شده) */
+export async function sendVideoMessage(chatId, file) {
+  await assertActionAllowed('send_media');
+  const uploaded = await uploadPrivateMedia("chat-media", chatId, file, "video");
+  const { error } = await supabase.rpc("send_chat_message", { p_chat_id: chatId, p_type: "video", p_media_url: uploaded.ref });
+  if (error) throw error;
+  return uploaded;
+}
+
 export async function sendVoiceMessage(chatId, blob, durationSec, waveform) {
-  const path = `${chatId}/voice_${Date.now()}.webm`;
-  const { error: upErr } = await supabase.storage.from("chat-media").upload(path, blob);
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from("chat-media").getPublicUrl(path);
+  await assertActionAllowed('send_voice');
+  const uploaded = await uploadPrivateMedia("chat-media", chatId, new File([blob], `voice_${Date.now()}.webm`, { type: blob.type || "audio/webm" }), "voice");
   const { error } = await supabase.rpc("send_chat_message", {
-    p_chat_id: chatId, p_type: "voice", p_media_url: pub.publicUrl,
+    p_chat_id: chatId, p_type: "voice", p_media_url: uploaded.ref,
     p_duration: durationSec, p_waveform: waveform || [],
   });
   if (error) throw error;
 }
 
 export async function toggleReaction(chatId, messageId, emoji) {
+  await assertActionAllowed('react');
   await supabase.rpc("toggle_chat_reaction", { p_chat_id: chatId, p_message_id: messageId, p_emoji: emoji });
 }
 

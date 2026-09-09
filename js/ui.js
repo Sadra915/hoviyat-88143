@@ -5,7 +5,10 @@
 import { icon } from "./icons.js";
 import { scanTextForLinks } from "./security.js";
 
-const REACTIONS = ["❤️", "😂", "👍", "😮", "😢", "👏"];
+const REACTIONS = [
+  ["❤️", "heart", "قلب"], ["😂", "laugh", "خنده"], ["👍", "thumbsUp", "پسندیدم"],
+  ["😮", "surprise", "تعجب"], ["😢", "frown", "ناراحت"], ["👏", "applause", "تشویق"],
+];
 
 function initials(name) {
   return (name || "؟").trim()[0] || "؟";
@@ -146,9 +149,10 @@ export function renderChatHeader(container, entity) {
       </div>
     </div>
     <div class="chat-header-actions">
+      <button id="chatAiHeaderBtn" class="icon-btn chat-ai-header-btn" title="هویت AI" aria-label="باز کردن هویت AI">✦</button>
       ${entity.mode === "channel" ? "" : `
-        <button id="chatCallBtn" class="icon-btn" title="در حال تکمیل و توسعه این بخش هستیم">${icon("phone")}</button>
-        <button id="chatVideoBtn" class="icon-btn" title="در حال تکمیل و توسعه این بخش هستیم">${icon("video")}</button>`}
+        <button id="chatCallBtn" class="icon-btn" title="تماس صوتی">${icon("phone")}</button>
+        <button id="chatVideoBtn" class="icon-btn" title="تماس تصویری">${icon("video")}</button>`}
       <button id="chatMenuBtn" class="icon-btn">${icon("moreVertical")}</button>
     </div>
   `;
@@ -267,6 +271,8 @@ function renderBubble(m, mine, showSenderNames, isNew, repliedMsg, otherLastRead
     inner = `<div class="bubble-sticker">${escapeHtml(m.body || "")}</div>`;
   } else if (m.type === "image") {
     inner = `<img class="bubble-image" src="${escapeHtml(m.mediaURL)}" loading="lazy" alt="عکس">`;
+  } else if (m.type === "video") {
+    inner = `<video class="bubble-video" src="${escapeHtml(m.mediaURL)}" controls preload="metadata" playsinline></video>`;
   } else if (m.type === "voice") {
     const bars = (m.waveform && m.waveform.length ? m.waveform : new Array(20).fill(0.3))
       .map(v => `<span style="height:${Math.max(12, Math.round(v * 100))}%"></span>`).join("");
@@ -322,37 +328,72 @@ function fmtDuration(sec) {
 }
 
 /** نمایش پاپ‌آور ری‌اکشن + ریپلای/حذف روی یک پیام (هنگام نگه‌داشتن) */
+export function closeReactionPickers() {
+  document.querySelectorAll(".reaction-picker").forEach(p => {
+    p.classList.remove("show");
+    p.remove();
+  });
+}
+
 export function showReactionPicker(anchorEl, onAction, opts = {}) {
-  document.querySelectorAll(".reaction-picker").forEach(p => p.remove());
+  closeReactionPickers();
   const picker = document.createElement("div");
   picker.className = "reaction-picker";
   picker.innerHTML =
-    (opts.hideReactions ? "" : REACTIONS.map(e => `<button data-emoji="${e}">${e}</button>`).join("")) +
-    (opts.hideReply ? "" : `<button data-action="reply" title="پاسخ">↩️</button>`) +
-    `<button data-action="copy" title="کپی متن">${icon("copy", { size: 15 })}</button>` +
-    (opts.canPin ? `<button data-action="${opts.isPinned ? "unpin" : "pin"}" title="${opts.isPinned ? "برداشتن سنجاق" : "سنجاق کردن"}">${icon("pin", { size: 15 })}</button>` : "") +
-    (opts.canReport ? `<button data-action="report" title="گزارش">${icon("triangleAlert", { size: 15 })}</button>` : "") +
-    (opts.canDelete ? `<button data-action="delete" title="حذف">${icon("trash", { size: 15 })}</button>` : "");
+    `<div class="reaction-row">${opts.hideReactions ? "" : REACTIONS.map(([emoji, iconName, label]) => `<button class="reaction-choice" data-emoji="${emoji}" title="${label}" aria-label="${label}">${icon(iconName, { size: 17 })}</button>`).join("")}</div>` +
+    `<div class="action-row">` +
+    (opts.hideReply ? "" : `<button data-action="reply" title="پاسخ" aria-label="پاسخ">${icon("reply", { size: 16 })}</button>`) +
+    (opts.canSave ? `<button data-action="save" title="ذخیره پیام" aria-label="ذخیره پیام">${icon("bookmark", { size: 16 })}</button>` : "") +
+    `<button data-action="copy" title="کپی متن" aria-label="کپی متن">${icon("copy", { size: 16 })}</button>` +
+    (opts.canPin ? `<button data-action="${opts.isPinned ? "unpin" : "pin"}" title="${opts.isPinned ? "برداشتن سنجاق" : "سنجاق کردن"}" aria-label="سنجاق">${icon("pin", { size: 16 })}</button>` : "") +
+    (opts.canReport ? `<button data-action="report" title="گزارش" aria-label="گزارش">${icon("triangleAlert", { size: 16 })}</button>` : "") +
+    (opts.canDelete ? `<button data-action="delete" title="حذف" aria-label="حذف">${icon("trash", { size: 16 })}</button>` : "") +
+    `</div>`;
   document.body.appendChild(picker);
 
   const rect = anchorEl.getBoundingClientRect();
-  picker.style.top = `${rect.top - 52}px`;
-  picker.style.left = `${Math.max(8, rect.left)}px`;
-  requestAnimationFrame(() => picker.classList.add("show"));
+  const gap = 8;
+  requestAnimationFrame(() => {
+    const pr = picker.getBoundingClientRect();
+    const pickerW = Math.min(pr.width || 238, window.innerWidth - 16);
+    const pickerH = pr.height || 92;
+    const spaceAbove = rect.top - 8;
+    const spaceBelow = window.innerHeight - rect.bottom - 8;
+    const placeAbove = spaceAbove >= pickerH || spaceAbove >= spaceBelow;
+    let top = placeAbove ? rect.top - pickerH - gap : rect.bottom + gap;
+    let left = rect.left + rect.width / 2 - pickerW / 2;
+    top = Math.max(8, Math.min(top, window.innerHeight - pickerH - 8));
+    left = Math.max(8, Math.min(left, window.innerWidth - pickerW - 8));
+    picker.style.top = `${top}px`;
+    picker.style.left = `${left}px`;
+    picker.classList.add("show");
+  });
 
   picker.addEventListener("click", e => {
     const emojiBtn = e.target.closest("button[data-emoji]");
     const actionBtn = e.target.closest("button[data-action]");
     if (emojiBtn) onAction({ type: "reaction", emoji: emojiBtn.dataset.emoji });
-    else if (actionBtn) onAction({ type: actionBtn.dataset.action });
+    else if (actionBtn) onAction({ type: actionBtn.dataset.action, anchor: picker, button: actionBtn });
     picker.remove();
   });
 
-  setTimeout(() => {
-    document.addEventListener("click", function closeOnce(ev) {
-      if (!picker.contains(ev.target)) { picker.remove(); document.removeEventListener("click", closeOnce); }
-    });
-  }, 0);
+  const close = () => {
+    if (!document.body.contains(picker)) return;
+    picker.classList.remove("show");
+    picker.remove();
+  };
+  const closeOnce = ev => {
+    if (!picker.contains(ev.target)) {
+      close();
+      document.removeEventListener("pointerdown", closeOnce, true);
+    }
+  };
+  setTimeout(() => document.addEventListener("pointerdown", closeOnce, true), 0);
+  picker._hoviyatClose = close;
+  window.addEventListener("resize", close, { once: true });
+  document.querySelectorAll(".messages-area").forEach(area => {
+    area.addEventListener("scroll", close, { passive: true, once: true });
+  });
 }
 
 /** پروفایل یک مخاطب (نه خود کاربر) — با زدن روی هدر چت خصوصی باز می‌شود */
@@ -667,6 +708,9 @@ export function renderSecretChatList(container, chats, myUid, othersInfo, onOpen
 }
 
 export function renderSecretMessages(container, messages, myUid) {
+  const previousBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+  const wasNearBottom = previousBottom < 120;
+  const previousHeight = container.scrollHeight;
   container.innerHTML = messages.map(m => `
     <div class="bubble-row ${m.senderId === myUid ? "mine" : "theirs"}">
       <div class="bubble ${m.senderId === myUid ? "mine" : "theirs"} ${m.broken ? "secret-broken" : ""}">
@@ -674,5 +718,10 @@ export function renderSecretMessages(container, messages, myUid) {
         <span class="bubble-time">${fmtTime(m.createdAt)}</span>
       </div>
     </div>`).join("");
-  container.scrollTop = container.scrollHeight;
+  if (!container.dataset.secretRendered || wasNearBottom) {
+    container.scrollTop = container.scrollHeight;
+    container.dataset.secretRendered = "1";
+  } else {
+    container.scrollTop += container.scrollHeight - previousHeight;
+  }
 }

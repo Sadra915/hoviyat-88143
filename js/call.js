@@ -256,3 +256,21 @@ export function toggleCamera() {
   track.enabled = !track.enabled;
   return !track.enabled; // true یعنی الان دوربین خاموشه
 }
+
+export async function switchCamera() {
+  if (!call?.localStream || !call.video || !navigator.mediaDevices?.enumerateDevices) return false;
+  const current = call.localStream.getVideoTracks()[0];
+  const devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
+  if (devices.length < 2) return false;
+  const idx = Math.max(0, devices.findIndex(d => d.deviceId === current?.getSettings?.().deviceId));
+  const next = devices[(idx + 1) % devices.length];
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { deviceId: { exact: next.deviceId } } });
+  const track = stream.getVideoTracks()[0];
+  const sender = call.pc?.getSenders?.().find(s => s.track?.kind === "video");
+  if (sender) await sender.replaceTrack(track);
+  current?.stop();
+  call.localStream.removeTrack(current);
+  call.localStream.addTrack(track);
+  handlers.onLocalStream && handlers.onLocalStream(call.localStream);
+  return true;
+}

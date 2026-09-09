@@ -14,7 +14,7 @@
  * کرده‌اند ممکن است نسخه کش‌شده قدیمی را (به‌خصوص در حالت آفلاین) ببینند.
  */
 
-const CACHE_VERSION = "hoviyat-ultimate-ui-v3-glass-final-v3";
+const CACHE_VERSION = "hoviyat-premium-ui-v5";
 
 const SHELL_FILES = [
   "./",
@@ -44,6 +44,7 @@ const SHELL_FILES = [
   "./js/hoviyat-next.js",
   "./js/admin-moderation-v2.js",
   "./js/hoviyat-flow.js",
+  "./js/hoviyat-motion.js",
   "./js/app.js",
   "./js/hoviyat-ai-chat.js",
   "./css/hoviyat-glass-final.css",
@@ -51,7 +52,7 @@ const SHELL_FILES = [
   "./css/hoviyat-v2.css",
   "./css/hoviyat-next.css",
   "./css/hoviyat-redesign.css",
-  "./css/admin-v2.css",
+  "./css/hoviyat-premium.css",
   "./assets/icons/favicon-64.png",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",

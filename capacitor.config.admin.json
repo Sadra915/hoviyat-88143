@@ -1,8 +1,0 @@
-{
-  "appId": "ir.hoviyat.admin",
-  "appName": "هویت ادمین",
-  "webDir": "dist-admin",
-  "server": {
-    "androidScheme": "https"
-  }
-}

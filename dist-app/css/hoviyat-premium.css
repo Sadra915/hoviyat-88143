@@ -1,0 +1,188 @@
+/* HOVIYAT PREMIUM UI v5
+   Original Hoviyat visual system with Telegram-inspired interaction patterns.
+   No Telegram code/assets are used. Frontend-only presentation layer. */
+:root{
+  --hv-orange:#f36b21;
+  --hv-orange-2:#ff8a3d;
+  --hv-ink:#171717;
+  --hv-muted:#737373;
+  --hv-paper:#f6f5f2;
+  --hv-surface:rgba(255,255,255,.78);
+  --hv-surface-strong:rgba(255,255,255,.94);
+  --hv-line:rgba(23,23,23,.075);
+  --hv-shadow:0 18px 55px rgba(28,24,20,.10),0 3px 12px rgba(28,24,20,.06);
+  --hv-ease:cubic-bezier(.22,1,.36,1);
+  --hv-spring:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme="dark"]{
+  --hv-ink:#f5f2ed;
+  --hv-muted:#a7a29b;
+  --hv-paper:#111214;
+  --hv-surface:rgba(28,29,31,.78);
+  --hv-surface-strong:rgba(30,31,34,.94);
+  --hv-line:rgba(255,255,255,.085);
+  --hv-shadow:0 20px 60px rgba(0,0,0,.32),0 2px 14px rgba(0,0,0,.24);
+}
+
+/* ---------- New visual world ---------- */
+body{background:var(--hv-paper)!important;color:var(--hv-ink)!important;}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.75;
+  background:
+    radial-gradient(42rem 30rem at 8% -5%,rgba(243,107,33,.12),transparent 68%),
+    radial-gradient(34rem 26rem at 100% 100%,rgba(255,138,61,.09),transparent 70%);
+}
+#appShell{isolation:isolate;}
+#appShell .topbar{
+  background:linear-gradient(180deg,var(--hv-surface-strong),var(--hv-surface))!important;
+  border:1px solid var(--hv-line)!important;border-top:0!important;
+  box-shadow:0 8px 35px rgba(0,0,0,.055)!important;
+  backdrop-filter:blur(28px) saturate(165%)!important;
+}
+#appShell .brand{font-weight:900;letter-spacing:-.045em;color:var(--hv-orange)!important;}
+#appShell .topbar-search{
+  border:1px solid var(--hv-line)!important;background:rgba(127,127,127,.075)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35)!important;
+  transition:transform .28s var(--hv-spring),box-shadow .28s var(--hv-spring),background .28s ease!important;
+}
+#appShell .topbar-search:focus-within{transform:translateY(-1px);box-shadow:0 10px 28px rgba(243,107,33,.10),0 0 0 4px rgba(243,107,33,.07)!important;background:var(--hv-surface-strong)!important;}
+#appShell .topbar-search input{color:var(--hv-ink)!important;}
+
+/* Product strip becomes a compact status rail instead of a generic toolbar. */
+#appShell .hv-product-strip{
+  margin:8px 12px 4px!important;padding:8px 10px!important;border-radius:17px!important;
+  background:linear-gradient(110deg,rgba(243,107,33,.10),rgba(255,255,255,.38))!important;
+  border:1px solid rgba(243,107,33,.12)!important;box-shadow:0 8px 25px rgba(243,107,33,.06)!important;
+  backdrop-filter:blur(18px) saturate(150%);animation:hvRailIn .55s var(--hv-spring) both;
+}
+html[data-theme="dark"] #appShell .hv-product-strip{background:linear-gradient(110deg,rgba(243,107,33,.13),rgba(255,255,255,.035))!important;}
+#appShell .hv-brand-mark{background:var(--hv-orange)!important;box-shadow:0 5px 18px rgba(243,107,33,.28)!important;}
+#appShell .hv-product-title{font-weight:850!important;letter-spacing:-.02em;}
+#appShell .hv-product-chip{border-color:rgba(243,107,33,.18)!important;color:var(--hv-orange)!important;background:rgba(243,107,33,.07)!important;}
+#appShell .hv-quick-action{transition:transform .22s var(--hv-spring),background .22s ease!important;}
+#appShell .hv-quick-action:hover{transform:translateY(-1px);background:rgba(243,107,33,.09)!important;}
+
+/* Navigation / filters */
+#appShell .filter-tabs{padding:8px 10px 6px!important;gap:6px!important;}
+#appShell .filter-tab{position:relative;border:1px solid transparent!important;transition:transform .22s var(--hv-spring),background .22s ease,color .22s ease!important;}
+#appShell .filter-tab:hover{transform:translateY(-1px);background:rgba(243,107,33,.06)!important;}
+#appShell .filter-tab.active{background:var(--hv-orange)!important;color:#fff!important;box-shadow:0 7px 20px rgba(243,107,33,.23)!important;}
+#appShell .filter-sort-btn{transition:transform .3s var(--hv-spring),background .2s ease!important;}
+#appShell .filter-sort-btn:hover{transform:rotate(-12deg) scale(1.04);}
+
+/* Chat rows: quieter than the old glass cards, richer interaction. */
+#appShell .chat-list{padding:4px 7px 110px!important;}
+#appShell .chat-card{
+  position:relative;overflow:hidden;margin:3px 0!important;border-radius:19px!important;
+  border:1px solid transparent!important;background:transparent!important;box-shadow:none!important;
+  transition:transform .34s var(--hv-spring),background .25s ease,box-shadow .34s var(--hv-spring)!important;
+}
+#appShell .chat-card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(243,107,33,.055),transparent);
+  transform:translateX(120%);transition:transform .55s var(--hv-spring);
+}
+#appShell .chat-card:hover{background:var(--hv-surface)!important;transform:translateX(-2px)!important;box-shadow:0 8px 25px rgba(0,0,0,.045)!important;}
+#appShell .chat-card:hover::before{transform:translateX(-120%);}
+#appShell .chat-card:active{transform:scale(.985)!important;}
+#appShell .chat-card.active{background:rgba(243,107,33,.075)!important;border-color:rgba(243,107,33,.11)!important;}
+#appShell .chat-card .avatar,.chat-header-avatar,.topbar-avatar{transition:transform .35s var(--hv-spring),box-shadow .35s var(--hv-spring)!important;}
+#appShell .chat-card:hover .avatar{transform:scale(1.035);box-shadow:0 9px 22px rgba(0,0,0,.10)!important;}
+
+/* Conversation shell */
+#appShell #view-chat,#appShell #view-secretchat{background:transparent!important;}
+#appShell .chat-header{
+  background:var(--hv-surface-strong)!important;border-inline:0!important;border-top:0!important;
+  box-shadow:0 7px 30px rgba(0,0,0,.045)!important;backdrop-filter:blur(26px) saturate(160%)!important;
+}
+#appShell .chat-header-profile-area{transition:transform .25s var(--hv-spring);}
+#appShell .chat-header-profile-area:hover{transform:translateY(-1px);}
+#appShell .chat-header-avatar{box-shadow:0 7px 20px rgba(0,0,0,.10)!important;}
+#appShell .messages-area{
+  scroll-behavior:smooth!important;
+  background:
+    radial-gradient(24rem 18rem at 15% 20%,rgba(243,107,33,.045),transparent 70%),
+    radial-gradient(28rem 20rem at 85% 80%,rgba(243,107,33,.035),transparent 70%)!important;
+}
+#appShell .messages-area::before{opacity:.022!important;animation-duration:60s!important;}
+
+/* Message bubbles */
+#appShell .bubble{
+  position:relative;border-radius:18px!important;border:1px solid var(--hv-line)!important;
+  box-shadow:0 7px 22px rgba(0,0,0,.055)!important;
+  transition:transform .24s var(--hv-spring),box-shadow .24s var(--hv-spring),filter .24s ease!important;
+}
+#appShell .bubble:hover{transform:translateY(-1px);box-shadow:0 11px 30px rgba(0,0,0,.08)!important;}
+#appShell .bubble.mine{
+  background:linear-gradient(145deg,#f36b21,#ff7d32)!important;border-color:rgba(255,255,255,.16)!important;
+  box-shadow:0 8px 25px rgba(243,107,33,.17)!important;
+}
+#appShell .bubble.theirs{background:var(--hv-surface-strong)!important;}
+#appShell .bubble-row{transform-origin:bottom center;}
+#appShell .bubble-row.hv-pop{animation:hvBubblePop .42s var(--hv-spring) both;}
+
+/* Composer: Telegram-like compactness, Hoviyat colors. */
+#appShell .composer{
+  background:var(--hv-surface-strong)!important;border:1px solid var(--hv-line)!important;
+  box-shadow:0 15px 45px rgba(0,0,0,.10)!important;backdrop-filter:blur(26px) saturate(160%)!important;
+  transition:transform .28s var(--hv-spring),box-shadow .28s var(--hv-spring),border-color .25s ease!important;
+}
+#appShell .composer:focus-within{transform:translateY(-2px);box-shadow:0 18px 50px rgba(0,0,0,.13),0 0 0 4px rgba(243,107,33,.06)!important;border-color:rgba(243,107,33,.22)!important;}
+#appShell .composer input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;}
+#appShell .composer .icon-btn{transition:transform .25s var(--hv-spring),background .2s ease,color .2s ease!important;}
+#appShell .composer .icon-btn:hover{transform:translateY(-2px) scale(1.03);background:rgba(243,107,33,.075)!important;color:var(--hv-orange)!important;}
+#appShell .send-btn{background:var(--hv-orange)!important;box-shadow:0 8px 22px rgba(243,107,33,.25)!important;transition:transform .28s var(--hv-spring),filter .2s ease,box-shadow .28s var(--hv-spring)!important;}
+#appShell .send-btn:hover{filter:brightness(1.05);transform:translateY(-2px) rotate(-3deg) scale(1.04)!important;box-shadow:0 12px 28px rgba(243,107,33,.31)!important;}
+#appShell .send-btn:active{transform:scale(.90) rotate(-8deg)!important;}
+
+/* FAB */
+#appShell .fab{background:linear-gradient(145deg,var(--hv-orange),var(--hv-orange-2))!important;box-shadow:0 16px 35px rgba(243,107,33,.28)!important;transition:transform .35s var(--hv-spring),box-shadow .35s var(--hv-spring),filter .2s ease!important;}
+#appShell .fab:hover{transform:translateY(-5px) rotate(4deg) scale(1.045)!important;box-shadow:0 22px 42px rgba(243,107,33,.34)!important;filter:saturate(1.08);}
+#appShell .fab:active{transform:scale(.90)!important;}
+
+/* Buttons: tactile without becoming a fireworks display. */
+#appShell .icon-btn,.btn-primary,.btn-outline,.option-row,.contact-action,.nav-btn{will-change:transform;}
+#appShell .icon-btn:focus-visible,.btn-primary:focus-visible,.btn-outline:focus-visible,.filter-tab:focus-visible{outline:3px solid rgba(243,107,33,.26)!important;outline-offset:2px;}
+#appShell .ripple-ink{background:rgba(243,107,33,.20)!important;}
+
+/* Sheets / modals */
+#appShell .modal{backdrop-filter:blur(10px)!important;background:rgba(10,10,10,.32)!important;animation:hvBackdropIn .24s ease both;}
+#appShell .modal-box{background:var(--hv-surface-strong)!important;border:1px solid var(--hv-line)!important;box-shadow:var(--hv-shadow)!important;border-radius:26px!important;animation:hvSheetSpring .48s var(--hv-spring) both!important;}
+
+/* Presence + typing */
+#appShell .hv-presence.typing{color:var(--hv-orange)!important;}
+#appShell .chat-header-status.on::before{background:var(--hv-orange)!important;box-shadow:0 0 0 5px rgba(243,107,33,.08);}
+
+/* Stagger classes added by motion controller */
+.hv-stagger{animation:hvListIn .44s var(--hv-spring) both;animation-delay:var(--hv-delay,0ms);}
+.hv-soft-in{animation:hvSoftIn .38s var(--hv-spring) both;}
+.hv-pressing{transform:scale(.975)!important;filter:saturate(.92);}
+
+/* Scrollbars */
+#appShell *{scrollbar-width:thin;scrollbar-color:rgba(243,107,33,.24) transparent;}
+#appShell ::-webkit-scrollbar{width:7px;height:7px;}
+#appShell ::-webkit-scrollbar-thumb{background:rgba(243,107,33,.24);border-radius:99px;border:2px solid transparent;background-clip:padding-box;}
+#appShell ::-webkit-scrollbar-thumb:hover{background:rgba(243,107,33,.42);background-clip:padding-box;}
+
+@keyframes hvRailIn{from{opacity:0;transform:translateY(-7px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes hvListIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes hvSoftIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes hvBubblePop{0%{opacity:0;transform:translateY(9px) scale(.92)}62%{opacity:1;transform:translateY(-1px) scale(1.012)}100%{opacity:1;transform:none}}
+@keyframes hvSheetSpring{from{opacity:0;transform:translateY(28px) scale(.965)}60%{opacity:1;transform:translateY(-3px) scale(1.006)}to{opacity:1;transform:none}}
+@keyframes hvBackdropIn{from{opacity:0}to{opacity:1}}
+
+@media(max-width:760px){
+  #appShell .hv-product-strip{margin-inline:7px!important;}
+  #appShell .hv-product-chip{display:none;}
+  #appShell .chat-card{border-radius:17px!important;}
+  #appShell .composer{margin-inline:6px!important;}
+  #appShell .bubble{max-width:90%!important;}
+}
+@media(min-width:1000px){
+  #appShell .chat-list{padding-inline:12px!important;}
+  #appShell .chat-card{max-width:760px;margin-inline:auto!important;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important;}
+}
+html[data-power="saving"] #appShell .topbar,html[data-power="saving"] #appShell .composer,html[data-power="saving"] #appShell .modal-box{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}

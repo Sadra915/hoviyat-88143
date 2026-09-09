@@ -22,9 +22,9 @@ alter table public.user_preferences enable row level security;
 drop policy if exists user_preferences_own_select on public.user_preferences;
 drop policy if exists user_preferences_own_insert on public.user_preferences;
 drop policy if exists user_preferences_own_update on public.user_preferences;
-create policy user_preferences_own_select on public.user_preferences for select using (auth.uid()=uid);
-create policy user_preferences_own_insert on public.user_preferences for insert with check (auth.uid()=uid);
-create policy user_preferences_own_update on public.user_preferences for update using (auth.uid()=uid);
+create policy user_preferences_own_select on public.user_preferences for select to authenticated using ((select auth.uid())=uid);
+create policy user_preferences_own_insert on public.user_preferences for insert to authenticated with check ((select auth.uid())=uid);
+create policy user_preferences_own_update on public.user_preferences for update to authenticated using ((select auth.uid())=uid) with check ((select auth.uid())=uid);
 
 create table if not exists public.chat_folders (
   id uuid primary key default gen_random_uuid(),
@@ -40,15 +40,15 @@ create table if not exists public.chat_folders (
 alter table public.chat_folders enable row level security;
 create index if not exists idx_chat_folders_uid_order on public.chat_folders(uid,sort_order);
 drop policy if exists chat_folders_own_all on public.chat_folders;
-create policy chat_folders_own_all on public.chat_folders for all using (auth.uid()=uid) with check (auth.uid()=uid);
+create policy chat_folders_own_all on public.chat_folders for all to authenticated using ((select auth.uid())=uid) with check ((select auth.uid())=uid);
 
 create table if not exists public.chat_folder_items (
   folder_id uuid not null references public.chat_folders(id) on delete cascade,
-  chat_id uuid not null references public.chats(id) on delete cascade,
+  chat_id text not null references public.chats(id) on delete cascade,
   sort_order integer not null default 0,
   primary key(folder_id,chat_id)
 );
 alter table public.chat_folder_items enable row level security;
-create policy chat_folder_items_own_all on public.chat_folder_items for all
-using (exists(select 1 from public.chat_folders f where f.id=folder_id and f.uid=auth.uid()))
-with check (exists(select 1 from public.chat_folders f where f.id=folder_id and f.uid=auth.uid()));
+create policy chat_folder_items_own_all on public.chat_folder_items for all to authenticated
+using (exists(select 1 from public.chat_folders f where f.id=folder_id and f.uid=(select auth.uid())))
+with check (exists(select 1 from public.chat_folders f where f.id=folder_id and f.uid=(select auth.uid())));

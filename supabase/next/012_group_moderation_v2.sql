@@ -1,3 +1,24 @@
+-- Dependency layer: these objects were missing from the original package, which made this migration fail.
+create table if not exists public.group_member_moderation (
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'member' check (role in ('admin','moderator','helper','member')),
+  banned_until timestamptz, muted_until timestamptz, restricted_until timestamptz,
+  permissions jsonb not null default '{}'::jsonb,
+  moderation_reason text, restriction_reason text,
+  updated_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  primary key(group_id,user_id)
+);
+alter table public.group_member_moderation enable row level security;
+create index if not exists idx_group_member_moderation_user on public.group_member_moderation(user_id,group_id);
+drop policy if exists group_member_moderation_admin_select on public.group_member_moderation;
+create policy group_member_moderation_admin_select on public.group_member_moderation for select to authenticated using ((select public.is_admin()));
+create or replace function public._is_group_manager(p_group_id uuid,p_uid uuid) returns boolean language sql security definer set search_path=public,pg_catalog as $$
+select exists(select 1 from public.groups g where g.id=p_group_id and p_uid=any(coalesce(g.admins,'{}'::uuid[])));
+$$;
+revoke all on function public._is_group_manager(uuid,uuid) from public,anon,authenticated;
+
 -- ثبت رویدادهای مدیریتی عمومی
 create table if not exists public.admin_action_log (
   id uuid primary key default gen_random_uuid(),

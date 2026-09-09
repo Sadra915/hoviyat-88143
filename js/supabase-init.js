@@ -17,7 +17,16 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export const ADMIN_UID = "88398939-05fe-4363-9298-26d9c03c096b";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    // Use PKCE for native OAuth. The app receives a short-lived authorization code
+    // through its deep link and exchanges it for the Supabase session.
+    flowType: "pkce",
+    // Native Android receives the OAuth callback through Capacitor App URLs.
+    // Browser/web builds keep Supabase URL detection enabled.
+    detectSessionInUrl: !window.Capacitor?.isNativePlatform?.(),
+  },
 });
 
 /**

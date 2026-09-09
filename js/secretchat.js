@@ -5,15 +5,17 @@
  * سرور فقط متن رمزشده را ذخیره می‌کند.
  */
 import { supabase, auth, uniqueChannelName } from "./supabase-init.js";
-import { ensureKeyPair, getMyPublicKeyJwk, deriveSharedAesKey, encryptText, decryptText } from "./secret-crypto.js";
+import { assertActionAllowed } from './restrictions.js';
+import { ensureKeyPair, getMyPublicKeyJwk, deriveSharedSecret, encryptText, decryptText, getKeyFingerprint, SECRET_CRYPTO_VERSION } from "./secret-crypto.js";
 
 const keyCache = {}; // otherUid -> CryptoKey مشترک (برای این‌که هر پیام دوباره از صفر مشتق نشه)
 
 /** باید یک‌بار بعد از لاگین صدا زده شود: کلید عمومی این دستگاه را (اگر لازم بود) در پروفایل ثبت می‌کند */
 export async function ensureMyPublicKeyPublished() {
-  const pub = await getMyPublicKeyJwk();
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("جلسه کاربر آماده نیست.");
+  await ensureKeyPair(uid);
+  const pub = await getMyPublicKeyJwk(uid);
   const { data } = await supabase.from("profiles").select("secret_pubkey").eq("id", uid).maybeSingle();
   const already = data?.secret_pubkey;
   if (already && JSON.stringify(already) === JSON.stringify(pub)) return; // از قبل ثبته
@@ -28,13 +30,16 @@ export async function getOtherPublicKey(otherUid) {
 
 async function getSharedKey(otherUid, otherPubJwk) {
   if (keyCache[otherUid]) return keyCache[otherUid];
-  const key = await deriveSharedAesKey(otherPubJwk);
+  const myUid = auth.currentUser?.uid;
+  if (!myUid) throw new Error("جلسه کاربر آماده نیست.");
+  const key = await deriveSharedSecret(otherPubJwk, myUid);
   keyCache[otherUid] = key;
   return key;
 }
 
 /** ساخت/بازکردن گفتگوی مخفی با یه کاربر؛ برمی‌گردونه { chat, aesKey } یا خطا اگه طرف مقابل هنوز کلید نداره */
 export async function openSecretChatWith(otherUid) {
+  await assertActionAllowed('secret_chat');
   await ensureMyPublicKeyPublished();
   const otherPub = await getOtherPublicKey(otherUid);
   if (!otherPub) {
@@ -74,7 +79,7 @@ export function watchSecretMessages(secretChatId, aesKey, callback) {
     const out = [];
     for (const row of rows) {
       try {
-        const body = await decryptText(aesKey, row.ciphertext, row.iv);
+        const body = await decryptText(aesKey, row.ciphertext, row.iv, row.salt, { chatId: secretChatId, senderId: row.sender_id });
         out.push({ id: row.id, senderId: row.sender_id, body, createdAt: row.created_at });
       } catch {
         out.push({ id: row.id, senderId: row.sender_id, body: "⚠️ این پیام قابل رمزگشایی نیست", createdAt: row.created_at, broken: true });
@@ -101,11 +106,14 @@ export function watchSecretMessages(secretChatId, aesKey, callback) {
 }
 
 export async function sendSecretText(secretChatId, aesKey, text) {
+  await assertActionAllowed('secret_chat');
   const body = text.trim().slice(0, 2000);
   if (!body) return;
-  const { ciphertext, iv } = await encryptText(aesKey, body);
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("جلسه کاربر آماده نیست.");
+  const { ciphertext, iv, cryptoVersion, salt } = await encryptText(aesKey, body, { chatId: secretChatId, senderId: uid });
   const { error } = await supabase.rpc("send_secret_message", {
-    p_secret_chat_id: secretChatId, p_ciphertext: ciphertext, p_iv: iv,
+    p_secret_chat_id: secretChatId, p_ciphertext: ciphertext, p_iv: iv, p_crypto_version: cryptoVersion, p_salt: salt,
   });
   if (error) throw error;
 }
@@ -120,3 +128,28 @@ export async function deleteSecretChat(secretChatId) {
 export async function runExpiredCleanup() {
   try { await supabase.rpc("cleanup_expired_secret_chats"); } catch { /* بی‌اهمیت، دفعه‌ی بعد امتحان می‌شه */ }
 }
+
+
+export async function getMySecretFingerprint() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("جلسه کاربر آماده نیست.");
+  return getKeyFingerprint(await getMyPublicKeyJwk(uid));
+}
+
+export async function getOtherSecretFingerprint(otherUid) {
+  const pub = await getOtherPublicKey(otherUid);
+  return pub ? getKeyFingerprint(pub) : null;
+}
+
+export async function checkOtherKeyChange(otherUid) {
+  const myUid = auth.currentUser?.uid;
+  if (!myUid || !otherUid) return { changed: false, fingerprint: null };
+  const fingerprint = await getOtherSecretFingerprint(otherUid);
+  if (!fingerprint) return { changed: false, fingerprint: null };
+  const key = `hoviyat-secret-peer-fp-v1:${myUid}:${otherUid}`;
+  const previous = localStorage.getItem(key);
+  localStorage.setItem(key, fingerprint);
+  return { changed: Boolean(previous && previous !== fingerprint), fingerprint, previous };
+}
+
+export const SECRET_CHAT_CRYPTO_VERSION = SECRET_CRYPTO_VERSION;

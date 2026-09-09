@@ -1,0 +1,160 @@
+/* V9.1 runtime hardening: stories, floating AI, scroll and overlays */
+#appShell #view-chat,
+#appShell #view-secretchat{min-height:0!important;}
+#appShell #view-chat .messages-area,
+#appShell #view-secretchat .messages-area{flex:1 1 0!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;}
+#appShell .reaction-picker{position:fixed!important;z-index:10000!important;max-width:calc(100vw - 16px)!important;max-height:72px!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;}
+#appShell .chat-ai-panel{display:none!important;}
+#appShell .chat-ai-panel[hidden]{display:none!important;}
+#appShell .chat-ai-panel.ai-open{display:block!important;position:fixed!important;z-index:10020!important;left:12px!important;right:12px!important;bottom:82px!important;width:auto!important;max-width:520px!important;margin:0 auto!important;max-height:min(48dvh,430px)!important;overflow:auto!important;padding:12px!important;border-radius:22px!important;box-shadow:0 24px 70px rgba(0,0,0,.28)!important;}
+#appShell .chat-ai-panel.ai-open .chat-ai-actions{max-height:120px;overflow:auto;}
+.stories-holder{min-height:0;overflow:visible;}
+.stories-rail{overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:none;}
+.stories-rail::-webkit-scrollbar{display:none;}
+.story-viewer-modal[hidden],.modal[hidden]{display:none!important;}
+.story-text-stage{width:min(88vw,520px);min-height:42vh;padding:38px 28px;border-radius:28px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(1.35rem,5vw,2.2rem);font-weight:800;line-height:1.9;white-space:pre-wrap;word-break:break-word;background:linear-gradient(145deg,rgba(118,88,255,.92),rgba(25,117,210,.92),rgba(190,70,180,.88));box-shadow:0 24px 80px rgba(0,0,0,.35);}
+.story-composer-box{max-height:min(86dvh,720px)!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important;}
+.story-file-picker{cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
+#storyCaptionInput{min-height:110px;resize:vertical;}
+@media(max-width:700px){
+  #appShell .reaction-picker{left:8px!important;right:8px!important;width:auto!important;max-width:none!important;}
+  .story-text-stage{min-height:50vh;width:min(92vw,520px);}
+}
+
+/* V13.1 compact long-press menu: never overflows, never loses action buttons. */
+#appShell .reaction-picker{
+  box-sizing:border-box!important;
+  width:min(252px,calc(100vw - 16px))!important;
+  max-width:min(252px,calc(100vw - 16px))!important;
+  max-height:min(154px,calc(100dvh - 24px))!important;
+  padding:7px!important;
+  border-radius:18px!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:5px!important;
+  overflow:hidden!important;
+  white-space:normal!important;
+}
+#appShell .reaction-picker button{
+  width:100%!important;
+  min-width:0!important;
+  height:36px!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:10px!important;
+  display:grid!important;
+  place-items:center!important;
+  background:rgba(0,0,0,.045)!important;
+  color:inherit!important;
+  font:inherit!important;
+  font-size:1.02rem!important;
+  line-height:1!important;
+  cursor:pointer!important;
+}
+#appShell .reaction-picker button:hover{transform:none!important;background:rgba(124,92,255,.12)!important;}
+#appShell .reaction-picker button:active{transform:scale(.94)!important;}
+@media(max-width:600px){
+  #appShell .reaction-picker{
+    width:min(232px,calc(100vw - 16px))!important;
+    max-width:min(232px,calc(100vw - 16px))!important;
+    max-height:calc(100dvh - 20px)!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    gap:4px!important;
+    padding:6px!important;
+    border-radius:16px!important;
+  }
+  #appShell .reaction-picker button{height:34px!important;border-radius:9px!important;font-size:.96rem!important;}
+}
+
+/* Secret chat clearance: no floating assistant/overlay may sit over the composer. */
+#appShell #view-secretchat .composer{position:relative!important;z-index:100!important;}
+#appShell #view-secretchat .messages-area{padding-bottom:calc(18px + env(safe-area-inset-bottom))!important;}
+#appShell #view-secretchat ~ .floating-ai-panel,
+#appShell .floating-ai-panel.secret-chat-blocked{display:none!important;}
+
+/* V13.2: compact icon-first long-press palette. */
+#appShell .reaction-picker{
+  width:min(246px,calc(100vw - 16px))!important;
+  max-width:min(246px,calc(100vw - 16px))!important;
+  height:auto!important;
+  max-height:none!important;
+  padding:7px!important;
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:6px!important;
+  overflow:visible!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  background:rgba(20,25,42,.88)!important;
+  backdrop-filter:blur(24px) saturate(150%)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(150%)!important;
+  box-shadow:0 18px 55px rgba(0,0,0,.30),0 0 0 1px rgba(124,92,255,.08)!important;
+}
+#appShell .reaction-picker .reaction-row,
+#appShell .reaction-picker .action-row{display:grid!important;gap:4px!important;align-items:center!important;}
+#appShell .reaction-picker .reaction-row{grid-template-columns:repeat(6,minmax(0,1fr))!important;padding-bottom:5px!important;border-bottom:1px solid rgba(255,255,255,.10)!important;}
+#appShell .reaction-picker .action-row{grid-template-columns:repeat(6,minmax(0,1fr))!important;}
+#appShell .reaction-picker button{
+  width:100%!important;min-width:0!important;height:34px!important;padding:0!important;margin:0!important;
+  display:grid!important;place-items:center!important;border:0!important;border-radius:10px!important;
+  background:rgba(255,255,255,.055)!important;color:inherit!important;font-size:0!important;
+  cursor:pointer!important;transition:transform .14s ease,background .14s ease,opacity .14s ease!important;
+}
+#appShell .reaction-picker button .ic{width:16px!important;height:16px!important;}
+#appShell .reaction-picker button:hover{background:rgba(124,92,255,.15)!important;transform:translateY(-1px)!important;}
+#appShell .reaction-picker button:active{transform:scale(.92)!important;}
+#appShell .reaction-picker .reaction-choice{background:rgba(255,255,255,.04)!important;}
+@media(max-width:600px){
+  #appShell .reaction-picker{width:min(232px,calc(100vw - 12px))!important;max-width:min(232px,calc(100vw - 12px))!important;padding:6px!important;}
+  #appShell .reaction-picker button{height:32px!important;border-radius:9px!important;}
+}
+
+/* Secret chat: the assistant is never allowed to occupy the secret composer zone. */
+body:has(#view-secretchat:not([hidden])) .floating-ai-panel,
+body:has(#view-secretchat:not([hidden])) #chatAiPanel{display:none!important;pointer-events:none!important;}
+#appShell #view-secretchat{position:relative!important;isolation:isolate!important;}
+#appShell #view-secretchat .secret-messages-area{position:relative!important;z-index:1!important;}
+#appShell #view-secretchat .composer{position:relative!important;z-index:20!important;margin-top:6px!important;}
+
+/* Telegram-inspired chat wallpaper, kept subtle so text remains the hero. */
+#appShell #view-chat .messages-area,
+#appShell #view-secretchat .messages-area{
+  background-color:rgba(246,248,252,.55)!important;
+  background-image:
+    radial-gradient(circle at 14px 14px,rgba(110,95,170,.055) 0 1px,transparent 1.5px),
+    radial-gradient(circle at 44px 36px,rgba(40,110,150,.045) 0 1px,transparent 1.5px),
+    linear-gradient(135deg,transparent 48%,rgba(255,255,255,.20) 49%,transparent 52%)!important;
+  background-size:58px 58px,74px 74px,120px 120px!important;
+}
+[data-theme="dark"] #appShell #view-chat .messages-area,
+[data-theme="dark"] #appShell #view-secretchat .messages-area,
+.dark #appShell #view-chat .messages-area,
+.dark #appShell #view-secretchat .messages-area{
+  background-color:rgba(12,17,29,.78)!important;
+  background-image:
+    radial-gradient(circle at 14px 14px,rgba(170,155,240,.055) 0 1px,transparent 1.5px),
+    radial-gradient(circle at 44px 36px,rgba(90,180,210,.04) 0 1px,transparent 1.5px),
+    linear-gradient(135deg,transparent 48%,rgba(255,255,255,.018) 49%,transparent 52%)!important;
+}
+
+
+/* V14.1: hard isolation for Secret Chat. The AI panel is body-level/fixed, so remove it at the source. */
+html[data-hoviyat-secret-chat] .floating-ai-panel,
+body[data-hoviyat-secret-chat] .floating-ai-panel,
+html[data-hoviyat-secret-chat] #chatAiPanel,
+body[data-hoviyat-secret-chat] #chatAiPanel{
+  display:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  z-index:-1!important;
+}
+#appShell[data-secret-chat-open="1"] #view-secretchat .composer,
+#appShell[data-secret-chat-open="1"] #secretComposerForm{
+  position:relative!important;
+  z-index:2147483000!important;
+  isolation:isolate!important;
+}
+#appShell[data-secret-chat-open="1"] #view-secretchat .messages-area{
+  z-index:1!important;
+}

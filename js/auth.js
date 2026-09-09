@@ -19,6 +19,42 @@ export function validateUsername(u) {
  * در schema.sql) خودش ردیف profiles را می‌سازد، چه ایمیل تأیید شده باشد
  * چه نشده.
  */
+export function getAuthRedirectUrl() {
+  const native = window.Capacitor?.isNativePlatform?.() || /^(capacitor|ionic|http|https):$/.test(window.location.protocol) && window.Capacitor?.isNativePlatform?.();
+  return native ? "ir.hoviyat.app://auth/oauth" : window.location.origin + window.location.pathname;
+}
+
+export async function signInWithGoogle() {
+  const native = !!window.Capacitor?.isNativePlatform?.();
+  const redirectTo = getAuthRedirectUrl();
+
+  // On Android, never let the OAuth page replace the Capacitor WebView.
+  // Supabase generates the Google authorization URL for us; the system
+  // browser handles Google, and the final custom-scheme callback re-opens
+  // Hoviyat through the Android deep link.
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+      skipBrowserRedirect: native,
+      queryParams: { prompt: "select_account" },
+    },
+  });
+  if (error) throw error;
+
+  if (native && data?.url) {
+    const browser = window.Capacitor?.Plugins?.Browser;
+    if (browser?.open) {
+      await browser.open({ url: data.url, presentationStyle: "popover" });
+    } else {
+      // Fallback for builds where the Browser plugin is unavailable.
+      window.open(data.url, "_blank");
+    }
+  }
+
+  return data;
+}
+
 export async function signUp({ email, password, username, displayName }) {
   const uname = username.trim().toLowerCase();
   if (!validateUsername(uname)) {
@@ -84,6 +120,7 @@ export async function logOut() {
 export function watchAuth(callback) {
   let lastUid;
   const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    if (_event === "PASSWORD_RECOVERY" || window.__HOVIYAT_RECOVERY_MODE) return;
     const uid = session?.user?.id || null;
     if (uid === lastUid) return;
     lastUid = uid;
