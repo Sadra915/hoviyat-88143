@@ -21,39 +21,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: نصب پکیج‌ها
+      - name: نصب پکی��‌ها
         run: npm install --no-audit --no-fund
 
       - name: ساخت dist-app
         run: npm run build:dist
 
-      # =========================
-      # HOVIYAT APP
-      # =========================
-
-      - name: آماده‌سازی کانفیگ اپ اصلی
-        run: |
-          if [ -f capacitor.config.app.json ]; then
-            cp capacitor.config.app.json capacitor.config.json
-            echo "✅ Using capacitor.config.app.json"
-          else
-            echo "⚠️ capacitor.config.app.json not found, using default config"
-          fi
-
-      - name: افزودن Android اپ اصلی
+      - name: افزودن Android
         run: npx cap add android
 
-      - name: Patch Deep Link اپ اصلی
+      - name: Patch Deep Link
         run: node scripts/patch-android-deeplink.mjs || echo "⚠️ Deep link patch skipped"
 
-      - name: Sync اپ اصلی
+      - name: Sync
         run: npx cap sync android
 
-      - name: Build APK اپ اصلی
+      - name: Build APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: آپلود APK اپ اصلی
+      - name: آپلود APK
         uses: actions/upload-artifact@v4
         with:
           name: hoviyat-app-debug
