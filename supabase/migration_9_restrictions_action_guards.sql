@@ -1,4 +1,0 @@
--- HOVIYAT v9
--- Extends per-user restrictions to Saved Messages, delete-message policies and profile edits.
--- The production migration was applied as: extend_user_restrictions_actions
--- and the index cleanup as: tune_user_restrictions_indexes.
