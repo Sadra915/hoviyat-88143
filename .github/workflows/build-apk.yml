@@ -1,13 +1,5 @@
 name: Build Hoviyat APKs
 
-# اجرا: این فایل را در ریپوی گیت‌هاب پروژه، مسیر .github/workflows/build-apk.yml قرار بده،
-# و push کن. بعد از چند دقیقه، از تب Actions روی همین ریپو، APKهای هردو اپ (اصلی + ادمین)
-# به‌عنوان "Artifacts" قابل دانلودن — بدون نیاز به نصب هیچ‌چیزی روی کامپیوتر خودت.
-#
-# نکته: APK ساخته‌شده اینجا امضای debug دارد (برای تست/نصب مستقیم کافی است). برای
-# انتشار در Google Play باید جدا امضای release بزنی (این فایل آن مرحله را انجام نمی‌دهد،
-# چون کلید امضا باید محرمانه و دست خودت بماند، نه در یک workflow عمومی).
-
 on:
   workflow_dispatch:
   push:
@@ -16,12 +8,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - uses: actions/setup-java@v4
         with:
@@ -29,33 +23,74 @@ jobs:
           java-version: '17'
 
       - name: نصب پکیج‌ها
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: ساخت dist-app و dist-admin
         run: npm run build:dist
 
-      - name: افزودن پروژه‌ی اندروید (اپ اصلی)
-        run: npx cap add android --config capacitor.config.app.json
-      - name: sync اپ اصلی
-        run: npx cap sync android --config capacitor.config.app.json
-      - name: build دیباگ اپ اصلی
-        run: cd android && ./gradlew assembleDebug && cd ..
+      # =========================
+      # HOVIYAT APP
+      # =========================
+
+      - name: آماده‌سازی کانفیگ اپ اصلی
+        run: cp capacitor.config.app.json capacitor.config.json
+
+      - name: افزودن Android اپ اصلی
+        run: npx cap add android
+
+      - name: Patch Deep Link اپ اصلی
+        run: node scripts/patch-android-deeplink.mjs
+
+      - name: بررسی Deep Link اپ اصلی
+        run: |
+          test -f android/app/src/main/AndroidManifest.xml
+          grep -q 'android:scheme="ir.hoviyat.app"' android/app/src/main/AndroidManifest.xml
+
+      - name: Sync اپ اصلی
+        run: npx cap sync android
+
+      - name: Build APK اپ اصلی
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
       - name: آپلود APK اپ اصلی
         uses: actions/upload-artifact@v4
         with:
-          name: hoviyat-app-debug.apk
+          name: hoviyat-app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
-      - name: حذف پروژه‌ی قبلی برای ساخت اپ ادمین
+      # =========================
+      # HOVIYAT ADMIN
+      # =========================
+
+      - name: حذف Android قبلی
         run: rm -rf android
-      - name: افزودن پروژه‌ی اندروید (اپ ادمین)
-        run: npx cap add android --config capacitor.config.admin.json
-      - name: sync اپ ادمین
-        run: npx cap sync android --config capacitor.config.admin.json
-      - name: build دیباگ اپ ادمین
-        run: cd android && ./gradlew assembleDebug && cd ..
+
+      - name: آماده‌سازی کانفیگ اپ ادمین
+        run: cp capacitor.config.admin.json capacitor.config.json
+
+      - name: افزودن Android اپ ادمین
+        run: npx cap add android
+
+      - name: Patch Deep Link اپ ادمین
+        run: node scripts/patch-android-deeplink.mjs
+
+      - name: بررسی Deep Link اپ ادمین
+        run: |
+          test -f android/app/src/main/AndroidManifest.xml
+          grep -q 'android:scheme="ir.hoviyat.admin"' android/app/src/main/AndroidManifest.xml
+
+      - name: Sync اپ ادمین
+        run: npx cap sync android
+
+      - name: Build APK اپ ادمین
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
       - name: آپلود APK اپ ادمین
         uses: actions/upload-artifact@v4
         with:
-          name: hoviyat-admin-debug.apk
+          name: hoviyat-admin-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
