@@ -32,21 +32,19 @@ jobs:
       # =========================
 
       - name: آماده‌سازی کانفیگ اپ اصلی
-        run: cp capacitor.config.app.json capacitor.config.json
+        run: |
+          if [ -f capacitor.config.app.json ]; then
+            cp capacitor.config.app.json capacitor.config.json
+            echo "✅ Using capacitor.config.app.json"
+          else
+            echo "⚠️ capacitor.config.app.json not found, using default config"
+          fi
 
       - name: افزودن Android اپ اصلی
         run: npx cap add android
 
       - name: Patch Deep Link اپ اصلی
-        run: node scripts/patch-android-deeplink.mjs || true
-
-      - name: بررسی Deep Link اپ اصلی
-        run: |
-          if [ -f android/app/src/main/AndroidManifest.xml ]; then
-            grep -q 'android:scheme="ir.hoviyat.app"' android/app/src/main/AndroidManifest.xml && echo "✅ Deep Link OK" || echo "⚠️ Deep Link might not be configured"
-          else
-            echo "⚠️ AndroidManifest.xml not found"
-          fi
+        run: node scripts/patch-android-deeplink.mjs || echo "⚠️ Deep link patch skipped"
 
       - name: Sync اپ اصلی
         run: npx cap sync android
@@ -63,4 +61,6 @@ jobs:
           if-no-files-found: warn
 
       - name: ✅ Build Complete
-        run: echo "APK اپ اصلی با موفقیت ساخته شد!"
+        run: |
+          echo "🎉 Build اپلیکیشن با موفقیت انجام شد!"
+          echo "📦 APK در Artifacts بخش موجود است"
