@@ -1,6 +1,6 @@
 /**
  * service-worker.js
- * نسخه ۲ — استراتژی عوض شد به Network-First (نه Cache-First) تا مشکل
+ * نسخه ۳ — استراتژی عوض شد به Network-First (نه Cache-First) تا مشکل
  * «کد قدیمی همیشه کش شده و آپدیت‌ها دیده نمی‌شوند» برای همیشه حل شود.
  * یعنی: همیشه اول از شبکه تلاش می‌کند (سریع، چون GitHub Pages CDN دارد)،
  * فقط اگر آفلاین بود یا شبکه شکست خورد، از کش (اگر موجود بود) استفاده می‌کند.
@@ -14,12 +14,11 @@
  * کرده‌اند ممکن است نسخه کش‌شده قدیمی را (به‌خصوص در حالت آفلاین) ببینند.
  */
 
-const CACHE_VERSION = "hoviyat-premium-ui-v5";
+const CACHE_VERSION = "hoviyat-premium-ui-v6";
 
 const SHELL_FILES = [
   "./",
   "./index.html",
-  "./admin.html",
   "./manifest.json",
   "./js/error-handler.js",
   "./css/style.css",
@@ -31,8 +30,6 @@ const SHELL_FILES = [
   "./js/voice.js",
   "./js/identity.js",
   "./js/smartspace.js",
-  "./js/admin.js",
-  "./js/admin-app.js",
   "./js/ui.js",
   "./js/icons.js",
   "./js/typing.js",
@@ -42,7 +39,6 @@ const SHELL_FILES = [
   "./js/secretchat.js",
   "./js/media-editor.js",
   "./js/hoviyat-next.js",
-  "./js/admin-moderation-v2.js",
   "./js/hoviyat-flow.js",
   "./js/hoviyat-motion.js",
   "./js/app.js",
@@ -61,7 +57,22 @@ const SHELL_FILES = [
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_VERSION)
-      .then(cache => cache.addAll(SHELL_FILES))
+      .then(cache => {
+        // فیلتر کردن فایل‌های غیرموجود برای جلوگیری از خطاهای 404
+        return Promise.all(
+          SHELL_FILES.map(file => 
+            fetch(file, { method: "HEAD" })
+              .then(res => {
+                if (res.ok) {
+                  return cache.add(file).catch(err => 
+                    console.warn(`Failed to cache ${file}:`, err)
+                  );
+                }
+              })
+              .catch(err => console.warn(`Fetch HEAD ${file} failed:`, err))
+          )
+        );
+      })
       .catch(err => console.warn("SW install cache error:", err))
   );
   self.skipWaiting();
@@ -69,7 +80,16 @@ self.addEventListener("install", event => {
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k))))
+    caches.keys().then(keys => 
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_VERSION)
+          .map(k => {
+            console.log(`Deleting old cache: ${k}`);
+            return caches.delete(k);
+          })
+      )
+    )
   );
   self.clients.claim();
 });
@@ -77,30 +97,43 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const req = event.request;
   if (req.method !== "GET") return;
-  const url = new URL(req.url);
-
-  // فقط فایل‌های هم‌مبدأ (پوسته برنامه) را کش می‌کنیم؛ بقیه (فونت، Supabase و ...) دست‌نخورده می‌مانند
-  if (url.origin !== self.location.origin) return;
-
-  event.respondWith(
-    fetch(req).then(res => {
-      // فقط پاسخ‌های موفق (200) کش می‌شوند — یک پاسخ خطا (404/500) هرگز کش نمی‌شود
-      if (res.ok) {
-        const clone = res.clone();
-        caches.open(CACHE_VERSION).then(cache => cache.put(req, clone));
-      }
-      return res;
-    }).catch(async () => {
-      const cached = await caches.match(req);
-      if (cached) return cached;
-      // اگر خود صفحه (navigation) بود و در کش هم نبود، بسته به این‌که کدام
-      // پوسته درخواست شده (اپ اصلی یا صفحه ادمین) بازمی‌گردانیم — نه همیشه index.html
-      if (req.mode === "navigate") {
-        return url.pathname.endsWith("admin.html")
-          ? caches.match("./admin.html")
-          : caches.match("./index.html");
-      }
-      return Response.error();
-    })
-  );
+  
+  try {
+    const url = new URL(req.url);
+    
+    // فقط فایل‌های هم‌مبدأ (پوسته برنامه) را کش می‌کنیم؛ بقیه (فونت، Supabase و ...) دست‌نخورده می‌مانند
+    if (url.origin !== self.location.origin) return;
+    
+    event.respondWith(
+      fetch(req)
+        .then(res => {
+          // اگر پاسخ خالی یا null باشد، skip کن
+          if (!res || res.status === 0) {
+            return caches.match(req).catch(() => Response.error());
+          }
+          
+          // فقط پاسخ‌های موفق (200-299) کش می‌شوند — یک پاسخ خطا (404/500) هرگز کش نمی‌شود
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION)
+              .then(cache => cache.put(req, clone))
+              .catch(err => console.warn("Failed to cache:", err));
+          }
+          return res;
+        })
+        .catch(async (error) => {
+          console.warn("Fetch failed, checking cache:", error);
+          const cached = await caches.match(req);
+          if (cached) return cached;
+          
+          // اگر خود صفحه (navigation) بود و در کش هم نبود، index.html رو برگردان
+          if (req.mode === "navigate") {
+            return caches.match("./index.html").catch(() => Response.error());
+          }
+          return Response.error();
+        })
+    );
+  } catch (err) {
+    console.error("Service Worker error:", err);
+  }
 });
